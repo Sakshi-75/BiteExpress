@@ -1,0 +1,30 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bite-express:local
+    container_name: bite-express
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_MONGODB_URI: mongodb://mongo:27017/biteexpress
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  mongo:
+    image: mongo:8.0
+    ports:
+      - "127.0.0.1:27018:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand({ ping: 1 }).ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  mongo_data:
