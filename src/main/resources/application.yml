@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: biteExpress
+
+biteexpress:
+  import:
+    enabled: false
+    file: file:./data/sample-restaurants.csv
+    country-file: file:./data/country-codes.csv

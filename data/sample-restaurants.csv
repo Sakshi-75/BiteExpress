@@ -1,0 +1,4 @@
+Restaurant ID,Restaurant Name,Country Code,City,Address,Locality,Locality Verbose,Longitude,Latitude,Cuisines,Average Cost for two,Currency,Has Table booking,Has Online delivery,Is delivering now,Switch to order menu,Price range,Aggregate rating,Rating color,Rating text,Votes
+100001,Spice Garden,1,New Delhi,"12 Market Road, Connaught Place",Connaught Place,"Connaught Place, New Delhi",77.2167,28.6333,"North Indian, Chinese",1200,Indian Rupees(Rs.),Yes,Yes,No,No,3,4.2,Green,Very Good,180
+100002,Cafe Willow,1,New Delhi,"8 Lake View Lane, Hauz Khas",Hauz Khas,"Hauz Khas, New Delhi",77.2066,28.5494,"Cafe, Continental",800,Indian Rupees(Rs.),No,Yes,Yes,No,2,4.0,Green,Very Good,95
+100003,The Curry House,1,Gurgaon,"21 Central Avenue, Sector 29",Sector 29,"Sector 29, Gurgaon",77.0639,28.4674,"North Indian, Mughlai",1500,Indian Rupees(Rs.),Yes,No,No,No,3,3.8,Yellow,Good,72

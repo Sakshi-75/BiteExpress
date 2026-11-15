@@ -9,3 +9,6 @@ mvnw
 mvnw.cmd
 HELP.md
 README.md
+data/*
+!data/sample-restaurants.csv
+!data/country-codes.csv

@@ -34,3 +34,4 @@ build/
 
 ### Local agent guidance ###
 /.steering/
+/data/zomato.csv
