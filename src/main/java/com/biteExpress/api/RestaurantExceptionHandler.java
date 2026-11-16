@@ -1,6 +1,7 @@
 package com.biteExpress.api;
 
 import com.biteExpress.service.RestaurantNotFoundException;
+import com.biteExpress.service.InvalidRestaurantSearchException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +9,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
 
@@ -33,6 +35,16 @@ public class RestaurantExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ProblemDetail> invalidBody() {
         return problem(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Request body must be valid restaurant JSON");
+    }
+
+    @ExceptionHandler(InvalidRestaurantSearchException.class)
+    ResponseEntity<ProblemDetail> invalidSearch(InvalidRestaurantSearchException error) {
+        return problem(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", error.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    ResponseEntity<ProblemDetail> invalidParameter(MethodArgumentTypeMismatchException error) {
+        return problem(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid query parameter: " + error.getName());
     }
 
     private ResponseEntity<ProblemDetail> problem(HttpStatus status, String code, String detail) {

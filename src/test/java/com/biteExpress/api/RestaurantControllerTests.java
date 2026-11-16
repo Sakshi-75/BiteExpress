@@ -2,6 +2,7 @@ package com.biteExpress.api;
 
 import com.biteExpress.service.RestaurantNotFoundException;
 import com.biteExpress.service.RestaurantService;
+import com.biteExpress.service.RestaurantSearchService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -26,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RestaurantControllerTests {
     @Autowired MockMvc mvc;
     @MockitoBean RestaurantService service;
+    @MockitoBean RestaurantSearchService searchService;
 
     @Test
     void missingRestaurantHasStructured404() throws Exception {
@@ -100,6 +102,24 @@ class RestaurantControllerTests {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
         verifyNoInteractions(service);
+    }
+
+    @Test
+    void invalidSearchParametersReturnStructured400BeforeQuerying() throws Exception {
+        List<String> invalid = List.of(
+                "maxCostForTwo=100", "minRating=6", "minRating=NaN", "page=-1",
+                "size=0", "size=101", "sortBy=unknown", "sortDir=sideways", "minRating=oops");
+        for (String query : invalid) {
+            mvc.perform(get("/v1/restaurants?" + query))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+        }
+        for (String field : List.of("name", "currency")) {
+            mvc.perform(get("/v1/restaurants").param(field, "  "))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+        }
+        verifyNoInteractions(searchService);
     }
 
     private String validJson() {

@@ -77,4 +77,23 @@ class RestaurantServiceTests {
         when(repository.findById("missing")).thenReturn(Optional.empty());
         assertThrows(RestaurantNotFoundException.class, () -> service.get("missing"));
     }
+
+    @Test
+    void createsRestaurantWithoutOptionalSectionsAndNormalizesBlankAddress() {
+        when(repository.save(any(Restaurant.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var request = new CreateRestaurantRequest("Cafe",
+                new CreateRestaurantRequest.AddressRequest("  ", "Delhi", " ", null),
+                null, null, null, null, null, null);
+
+        var response = service.create(request);
+
+        assertNull(response.address().line1());
+        assertNull(response.address().locality());
+        assertNull(response.country());
+        assertNull(response.location());
+        assertEquals(List.of(), response.cuisines());
+        assertNull(response.pricing());
+        assertNull(response.rating());
+        assertNull(response.features());
+    }
 }

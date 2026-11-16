@@ -67,5 +67,37 @@ class RestaurantCsvReaderTests {
         }
     }
 
+    @Test
+    void validatesCountryCodesAndBothSidesOfPriceRange() throws Exception {
+        String[][] invalid = {
+                {"Spice Garden,1,", "Spice Garden,0,", "Country Code"},
+                {"Spice Garden,1,", "Spice Garden,bad,", "Country Code"},
+                {",No,No,3,4.2,", ",No,No,0,4.2,", "Price range"}
+        };
+        for (String[] entry : invalid) {
+            var summary = new RestaurantCsvReader().scan(new StringReader(sample().replace(entry[0], entry[1])),
+                    countries, restaurant -> {});
+            assertEquals(1, summary.rejectedRows(), entry[2]);
+            assertTrue(summary.examples().getFirst().contains(entry[2]));
+        }
+    }
+
+    @Test
+    void keepsBlankOptionalFieldsAndDropsEmptyCuisineEntries() throws Exception {
+        String csv = sample().replace("\"12 Market Road, Connaught Place\"", "")
+                .replace("\"North Indian, Chinese\"", "\"North Indian, , Chinese\"")
+                .replace("\"North Indian, , Chinese\",1200,", "\"North Indian, , Chinese\",,")
+                .replace(",No,No,3,4.2,Green,Very Good,180", ",No,No,,4.2,Green,,");
+        List<Restaurant> rows = new ArrayList<>();
+        new RestaurantCsvReader().scan(new StringReader(csv), countries, rows::add);
+        Restaurant first = rows.getFirst();
+        assertNull(first.address().line1());
+        assertEquals(List.of("North Indian", "Chinese"), first.cuisines());
+        assertNull(first.pricing().averageCostForTwo());
+        assertNull(first.pricing().priceRange());
+        assertNull(first.rating().text());
+        assertNull(first.rating().votes());
+    }
+
     private String sample() throws Exception { return Files.readString(Path.of("data/sample-restaurants.csv")); }
 }

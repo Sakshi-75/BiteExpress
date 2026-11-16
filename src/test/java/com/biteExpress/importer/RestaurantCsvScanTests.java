@@ -13,6 +13,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RestaurantCsvScanTests {
@@ -34,7 +35,8 @@ class RestaurantCsvScanTests {
 
     @Test
     void treatsMissingInvalidAndZeroCoordinatesAsUnavailable() throws Exception {
-        for (String coordinates : List.of("0,0", "181,28.6333", ",28.6333")) {
+        for (String coordinates : List.of("0,0", "181,28.6333", "-181,28.6333", ",28.6333",
+                "77.2167,", "bad,28.6333", "NaN,28.6333", "77.2167,91")) {
             String csv = sample().replace("77.2167,28.6333", coordinates);
             List<Restaurant> restaurants = new ArrayList<>();
 
@@ -44,6 +46,63 @@ class RestaurantCsvScanTests {
             assertEquals(1, summary.unavailableLocations());
             assertNull(restaurants.getFirst().location());
         }
+    }
+
+    @Test
+    void keepsCoordinatesWhenOnlyOneValueIsZero() throws Exception {
+        for (String coordinates : List.of("0,28.6333", "77.2167,0")) {
+            List<Restaurant> restaurants = new ArrayList<>();
+            var summary = new RestaurantCsvReader().scan(new StringReader(
+                    sample().replace("77.2167,28.6333", coordinates)), countries, restaurants::add);
+            assertEquals(3, summary.validRows());
+            assertEquals(0, summary.unavailableLocations());
+        }
+    }
+
+    @Test
+    void handlesBlankAndLiteralUnratedValuesAndRatedZero() throws Exception {
+        for (String replacement : List.of(",3,,Green,Very Good,180", ",3,Not rated,Green,Very Good,180")) {
+            List<Restaurant> restaurants = new ArrayList<>();
+            new RestaurantCsvReader().scan(new StringReader(sample().replace(
+                    ",3,4.2,Green,Very Good,180", replacement)), countries, restaurants::add);
+            assertNull(restaurants.getFirst().rating().average());
+        }
+        List<Restaurant> ratedZero = new ArrayList<>();
+        new RestaurantCsvReader().scan(new StringReader(sample().replace(
+                ",3,4.2,Green,Very Good,180", ",3,0,Green,Good,180")), countries, ratedZero::add);
+        assertEquals(0.0, ratedZero.getFirst().rating().average());
+    }
+
+    @Test
+    void rejectsNonfiniteNegativeAndMalformedRatings() throws Exception {
+        for (String rating : List.of("NaN", "-0.1", "bad")) {
+            List<Restaurant> restaurants = new ArrayList<>();
+            var summary = new RestaurantCsvReader().scan(new StringReader(sample().replace(
+                    ",3,4.2,Green,Very Good,180", ",3," + rating + ",Green,Very Good,180")),
+                    countries, restaurants::add);
+            assertEquals(1, summary.rejectedRows(), rating);
+            assertEquals(2, restaurants.size(), rating);
+        }
+    }
+
+    @Test
+    void rejectsMissingHeaderAndInconsistentRowsAndCapsExamples() throws Exception {
+        assertTrue(assertThrows(IllegalArgumentException.class,
+                () -> new RestaurantCsvReader().scan(new StringReader(
+                        sample().replace("Restaurant ID,Restaurant Name", "Source ID,Restaurant Name")),
+                        countries, restaurant -> {})).getMessage().contains("Restaurant ID"));
+        var inconsistent = new RestaurantCsvReader().scan(new StringReader(sample().replace(
+                "100001,Spice Garden,1,", "100001,Spice Garden,1,extra,")), countries, restaurant -> {});
+        assertEquals(1, inconsistent.rejectedRows());
+        assertTrue(inconsistent.examples().getFirst().contains("Column count"));
+
+        String[] lines = sample().split("\\R");
+        String invalid = lines[1].replace("Spice Garden", "");
+        String csv = lines[0] + "\n" + (invalid + "\n").repeat(11) + lines[1] + "\n";
+        var capped = new RestaurantCsvReader().scan(new StringReader(csv), countries, restaurant -> {});
+        assertEquals(11, capped.rejectedRows());
+        assertEquals(10, capped.examples().size());
+        assertEquals(1, capped.validRows());
     }
 
     @Test

@@ -31,6 +31,8 @@ class OpenApiDocumentationTests {
             assertTrue(json.contains("\"version\":\"v1\""));
             assertTrue(json.contains("/v1/restaurants"));
             assertTrue(json.contains("/v1/restaurants/{id}"));
+            assertTrue(json.contains("\"get\""));
+            assertTrue(json.contains("maxCostForTwo"));
             assertTrue(json.contains("\"201\""));
             assertTrue(json.contains("\"200\""));
             assertTrue(json.contains("\"400\""));

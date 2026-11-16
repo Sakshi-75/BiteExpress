@@ -1,6 +1,8 @@
 package com.biteExpress.api;
 
 import com.biteExpress.service.RestaurantService;
+import com.biteExpress.service.RestaurantSearchCriteria;
+import com.biteExpress.service.RestaurantSearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,9 +28,33 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Restaurants", description = "Create restaurants and retrieve them by ID")
 public class RestaurantController {
     private final RestaurantService service;
+    private final RestaurantSearchService searchService;
 
-    public RestaurantController(RestaurantService service) {
+    public RestaurantController(RestaurantService service, RestaurantSearchService searchService) {
         this.service = service;
+        this.searchService = searchService;
+    }
+
+    @GetMapping
+    @Operation(summary = "Search restaurants", description = "Combines supplied filters with AND logic. Results are sorted by the selected field and then ID. Missing ratings or costs do not match their respective numeric filters.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Page of matching restaurants", content = @Content(schema = @Schema(implementation = RestaurantSearchResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid search parameter", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+    })
+    public RestaurantSearchResponse search(
+            @Parameter(description = "Case-insensitive partial restaurant name; literal text", example = "spice") @RequestParam(required = false) String name,
+            @Parameter(description = "Case-insensitive exact city", example = "Gurgaon") @RequestParam(required = false) String city,
+            @Parameter(description = "Case-insensitive exact cuisine in the cuisines array", example = "Indian") @RequestParam(required = false) String cuisine,
+            @Parameter(description = "Minimum average rating, from 0 to 5; unrated restaurants are excluded", example = "4.0") @RequestParam(required = false) Double minRating,
+            @Parameter(description = "Maximum cost for two, nonnegative; requires currency", example = "1000") @RequestParam(required = false) Integer maxCostForTwo,
+            @Parameter(description = "Case-insensitive exact currency; required with maxCostForTwo", example = "Indian Rupees(Rs.)") @RequestParam(required = false) String currency,
+            @Parameter(description = "Zero-based page number", example = "0") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size from 1 to 100", example = "20") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Sort field: name, city, rating, or cost", example = "rating") @RequestParam(defaultValue = "name") String sortBy,
+            @Parameter(description = "Sort direction: asc or desc", example = "desc") @RequestParam(defaultValue = "asc") String sortDir
+    ) {
+        return searchService.search(new RestaurantSearchCriteria(name, city, cuisine, minRating,
+                maxCostForTwo, currency, page, size, sortBy, sortDir));
     }
 
     @PostMapping

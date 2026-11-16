@@ -32,4 +32,15 @@ class CountryCsvReaderTests {
 
         assertTrue(error.getMessage().contains("Country"));
     }
+
+    @Test
+    void rejectsNonpositiveAndDuplicateCountryCodesWithRecordNumber() {
+        for (String csv : new String[]{
+                "Country Code,Country\n0,India\n",
+                "Country Code,Country\n1,India\n1,Other\n"}) {
+            IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                    () -> new CountryCsvReader().read(new StringReader(csv)));
+            assertTrue(error.getMessage().contains("record "));
+        }
+    }
 }

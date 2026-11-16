@@ -59,7 +59,33 @@ Existing databases may contain restaurants imported before UUID IDs were introdu
 
 `POST /v1/restaurants` creates a restaurant and returns `201 Created` with the complete restaurant JSON. It does not send a `Location` header. `GET /v1/restaurants/{id}` returns the same representation with `200 OK`, or a `404` problem response when the ID is absent. GET looks up the supplied ID without special handling. Names need not be unique.
 
-Interactive API documentation is available at [Swagger UI](http://localhost:8080/swagger-ui/index.html), with the OpenAPI JSON at [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs). Start the app, open Swagger UI, expand an endpoint, and select **Try it out** to send a request. Swagger currently shows POST and GET by ID; a restaurant listing endpoint and its query parameters are not implemented yet.
+Interactive API documentation is available at [Swagger UI](http://localhost:8080/swagger-ui/index.html), with the OpenAPI JSON at [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs). Start the app, open Swagger UI, expand an endpoint, and select **Try it out** to send a request.
+
+### Structured search
+
+`GET /v1/restaurants` returns a page of restaurant summaries. Supplied filters combine with AND; omitted filters do not limit results. Search and pagination execute in MongoDB. The response includes `content`, zero-based `page`, `size`, `totalElements`, and `totalPages`. Each summary has `id`, `name`, an embedded `address` (`line1`, `city`, `locality`, `localityVerbose`), a top-level `city`, `country` (`code` and `name`), `cuisines`, `averageRating`, and `location` (`latitude`, `longitude`). Missing ratings and locations appear as `null`; unrated restaurants do not match `minRating`. Empty results return `content: []` and zero totals.
+
+| Parameter | Meaning |
+| --- | --- |
+| `name` | Case-insensitive partial name; regex punctuation is treated literally. |
+| `city` | Case-insensitive exact city. |
+| `cuisine` | Case-insensitive exact cuisine array entry. |
+| `minRating` | Minimum average rating, inclusive, from 0 to 5. |
+| `maxCostForTwo` | Maximum nonnegative cost for two, inclusive. Requires `currency`. Restaurants without a cost do not match. |
+| `currency` | Case-insensitive exact source currency; can also filter on its own. |
+| `page` | Zero-based page number; defaults to 0. |
+| `size` | Page size from 1 to 100; defaults to 20. |
+| `sortBy` | `name` (default), `city`, `rating`, or `cost`. |
+| `sortDir` | `asc` (default) or `desc`. Equal sort values are ordered by ID ascending. |
+
+For example:
+
+```sh
+curl 'http://localhost:8080/v1/restaurants?city=Gurgaon&cuisine=Indian&minRating=4&sortBy=rating&sortDir=desc&page=0&size=10'
+curl 'http://localhost:8080/v1/restaurants?maxCostForTwo=800&currency=Indian%20Rupees%28Rs.%29'
+```
+
+Invalid query values return HTTP 400 with `code: "INVALID_REQUEST"`. Search is a structured listing; it does not calculate distance or interpret natural language. The search uses no new MongoDB indexes: the available filters include case-insensitive regex matching and multiple sort choices, so a single index would not reliably serve them. This can be revisited with query plans and production data.
 
 Example creation request:
 
@@ -103,18 +129,18 @@ In Compass, refresh `biteexpress` after an import, open `restaurants`, and inspe
 docker compose exec mongo mongosh biteexpress --quiet --eval "print(db.restaurants.countDocuments({})); printjson(db.restaurants.findOne())"
 ```
 
-Run tests with the Maven wrapper (or `mvn` with JDK 21):
+Run tests with the Maven wrapper (or `mvn` with JDK 21). Unit and MVC slice tests run during `test`; the MongoDB-backed integration tests run during `verify`:
 
 ```sh
 ./mvnw test
-./mvnw verify
+./mvnw clean verify
 ```
 
-`docker compose build app` also runs the tests via the Dockerfile. The unit tests do not require a running database. A separate isolated database should be used for any manual repeat-import check; do not delete the development database to test idempotency.
+On Windows PowerShell, use `.\mvnw.cmd test` or `.\mvnw.cmd clean verify`. Start Docker Desktop before `verify`; the integration tests are grouped in `src/test/java/com/biteExpress/integration` and use Testcontainers to start a disposable MongoDB 8 instance with Spring Boot `@ServiceConnection`. They use the `biteexpress_integration_test` database, clear its `restaurants` collection before each test, and never connect to the Compose development database. No MongoDB URI environment variables are required. The tests cover API creation/retrieval, validation, structured listing, and repeat CSV import. `docker compose build app` runs the unit tests during the Dockerfile's `package` step; the integration tests run separately in `verify` because Docker is not available inside the image build.
 
-The MongoDB integration test runs only when `BITEEXPRESS_TEST_MONGODB_URI` is set to a database whose name starts with `biteexpress_import_test_`. For example, with JDK 21 and MongoDB running, set it to `mongodb://localhost:27018/biteexpress_import_test_local` before `./mvnw test`. This test creates uniquely named records and leaves them in that isolated database.
+`clean verify` generates a combined JaCoCo report for unit and integration tests at `target/site/jacoco/index.html`. Run both phases before interpreting coverage; `test` alone does not include the MongoDB-backed tests.
 
-The HTTP integration test requires `BITEEXPRESS_API_TEST_MONGODB_URI` and `SPRING_MONGODB_URI` to point to the same isolated database with a name starting `biteexpress_api_test_`. It creates one uniquely named restaurant and leaves the document in that database. For example, set both variables to `mongodb://localhost:27018/biteexpress_api_test_local` before running `./mvnw test`.
+For manual repeat-import checks, use a separate isolated database; never delete development data to test idempotency.
 
 ## Stop services
 
