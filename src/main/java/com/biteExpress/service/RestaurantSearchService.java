@@ -8,8 +8,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
-import org.springframework.data.mongodb.core.index.GeoSpatialIndexType;
-import org.springframework.data.mongodb.core.index.GeospatialIndex;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
@@ -24,18 +22,20 @@ public class RestaurantSearchService {
     private static final Map<String, String> SORT_FIELDS = Map.of(
             "name", "name", "city", "address.city", "rating", "rating.average", "cost", "pricing.averageCostForTwo");
     private final MongoTemplate mongoTemplate;
+    private final RestaurantLocationIndex locationIndex;
 
-    public RestaurantSearchService(MongoTemplate mongoTemplate) {
+    public RestaurantSearchService(MongoTemplate mongoTemplate, RestaurantLocationIndex locationIndex) {
         this.mongoTemplate = mongoTemplate;
+        this.locationIndex = locationIndex;
     }
 
     public RestaurantSearchResponse search(RestaurantSearchCriteria input) {
         List<Criteria> filters = new ArrayList<>();
         if (input.name() != null) filters.add(Criteria.where("name").regex(Pattern.quote(input.name()), "i"));
-        if (input.city() != null) filters.add(Criteria.where("address.city").regex(exact(input.city()), "i"));
+        if (input.city() != null) filters.add(Criteria.where("address.city").regex(cityPattern(input.city()), "i"));
         if (input.cuisine() != null) filters.add(Criteria.where("cuisines").regex(exact(input.cuisine()), "i"));
         if (input.minRating() != null) filters.add(Criteria.where("rating.average").gte(input.minRating()));
-        if (input.currency() != null) filters.add(Criteria.where("pricing.currency").regex(exact(input.currency()), "i"));
+        if (input.currency() != null) filters.add(Criteria.where("pricing.currency").regex(currencyPattern(input.currency()), "i"));
         if (input.maxCostForTwo() != null)
             filters.add(Criteria.where("pricing.averageCostForTwo").lte(input.maxCostForTwo()));
 
@@ -56,9 +56,8 @@ public class RestaurantSearchService {
     }
 
     private RestaurantSearchResponse searchNearby(RestaurantSearchCriteria input, Criteria filters) {
-        // Spring Data does not create annotated indexes by default. Ensure only the index geoNear needs.
-        mongoTemplate.indexOps(Restaurant.class).createIndex(
-                new GeospatialIndex("location").typed(GeoSpatialIndexType.GEO_2DSPHERE));
+        // Also handles a collection recreated after application startup.
+        locationIndex.ensure();
 
         Document point = new Document("type", "Point")
                 .append("coordinates", List.of(input.longitude(), input.latitude()));
@@ -97,6 +96,19 @@ public class RestaurantSearchService {
 
     private String exact(String value) {
         return "^" + Pattern.quote(value) + "$";
+    }
+
+    private String cityPattern(String city) {
+        if (city.equalsIgnoreCase("Gurgaon") || city.equalsIgnoreCase("Gurugram"))
+            return "^(?:" + Pattern.quote("Gurgaon") + "|" + Pattern.quote("Gurugram") + ")$";
+        return exact(city);
+    }
+
+    private String currencyPattern(String currency) {
+        if (currency.equalsIgnoreCase("INR") || currency.equalsIgnoreCase("Rs")
+                || currency.equalsIgnoreCase("Indian Rupees(Rs.)"))
+            return "^(?:" + Pattern.quote("INR") + "|" + Pattern.quote("Indian Rupees(Rs.)") + ")$";
+        return exact(currency);
     }
 
     private RestaurantSearchResponse.RestaurantSummary toSummary(Restaurant restaurant, Double distanceKm) {

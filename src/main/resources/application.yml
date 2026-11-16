@@ -3,6 +3,8 @@ spring:
     name: biteExpress
 
 biteexpress:
+  search:
+    create-location-index-on-startup: true
   import:
     enabled: false
     file: file:./data/sample-restaurants.csv

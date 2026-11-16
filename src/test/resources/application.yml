@@ -3,3 +3,8 @@ spring:
     # A fail-closed default for tests that start Spring without Testcontainers.
     # @ServiceConnection overrides this URI in database-backed integration tests.
     uri: mongodb://127.0.0.1:1/biteexpress_test_guard?serverSelectionTimeoutMS=1000
+
+biteexpress:
+  search:
+    # Full-context tests without a container must not try to create a real index.
+    create-location-index-on-startup: false

@@ -28,7 +28,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = "spring.mongodb.database=biteexpress_integration_test")
+@SpringBootTest(properties = {"spring.mongodb.database=biteexpress_integration_test",
+        "biteexpress.search.create-location-index-on-startup=true"})
 @AutoConfigureMockMvc
 @Import(MongoIntegrationTestConfiguration.class)
 class RestaurantSearchHttpIntegrationTests {
@@ -46,6 +47,9 @@ class RestaurantSearchHttpIntegrationTests {
     @BeforeEach
     void seedOnlyTheContainerDatabase() {
         MongoIntegrationTestConfiguration.assertContainerConnection(mongoTemplate, mongoClient, mongoContainer);
+        assertTrue(mongoTemplate.getCollection("restaurants").listIndexes().into(new java.util.ArrayList<>())
+                .stream().anyMatch(index -> "2dsphere".equals(index.get("key", org.bson.Document.class).getString("location"))),
+                "The location index must exist before the first nearby request");
         repository.deleteAll();
         repository.saveAll(List.of(
                 restaurant(A, "Spice House", "Gurgaon", "Indian", 4.6, 500, "INR"),

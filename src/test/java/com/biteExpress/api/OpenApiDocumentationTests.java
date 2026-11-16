@@ -1,5 +1,6 @@
 package com.biteExpress.api;
 
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,7 +11,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -43,7 +43,12 @@ class OpenApiDocumentationTests {
             assertTrue(json.contains("\"400\""));
             assertTrue(json.contains("\"404\""));
             assertTrue(json.contains("Spice House"));
-            assertFalse(json.contains("/v1/restaurants/search"));
+            assertTrue(json.contains("/v1/restaurants/search"));
+            assertTrue(json.contains("nearest Chinese restaurants within 5 km"));
+            java.util.List<String> naturalParameters = JsonPath.read(json,
+                    "$.paths['/v1/restaurants/search'].get.parameters[*].name");
+            assertTrue(naturalParameters.containsAll(java.util.List.of("q", "city", "cuisine",
+                    "latitude", "longitude", "radiusKm", "page", "size", "sortBy", "sortDir")));
         }
     }
 
