@@ -105,7 +105,7 @@ class RestaurantSearchHttpIntegrationTests {
         mvc.perform(get("/v1/restaurants").param("name", "Spice House").param("sortBy", "name")
                         .param("size", "1").param("page", "1"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].id").value(B));
-        mvc.perform(get("/v1/restaurants").param("sortBy", "cost").param("sortDir", "desc"))
+        mvc.perform(get("/v1/restaurants").param("sortBy", "cost").param("sortDir", "desc").param("currency", "INR"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].id").value(B));
         mvc.perform(get("/v1/restaurants").param("sortBy", "rating").param("sortDir", "desc"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].id").value(D));

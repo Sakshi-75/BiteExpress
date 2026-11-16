@@ -54,7 +54,7 @@ public class RestaurantController {
             @Parameter(description = "Optional maximum distance in kilometers, inclusive and nonnegative; requires coordinates", example = "5") @RequestParam(required = false) Double radiusKm,
             @Parameter(description = "Zero-based page number", example = "0") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size from 1 to 100", example = "20") @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "Sort field: name, city, rating, cost, or distance (requires coordinates). Defaults to distance for nearby searches, name otherwise", example = "distance") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Sort field: name, city, rating, cost (requires currency), or distance (requires coordinates). Defaults to distance for nearby searches, name otherwise", example = "distance") @RequestParam(required = false) String sortBy,
             @Parameter(description = "Sort direction: asc or desc", example = "desc") @RequestParam(defaultValue = "asc") String sortDir
     ) {
         return searchService.search(new RestaurantSearchCriteria(name, city, cuisine, minRating,

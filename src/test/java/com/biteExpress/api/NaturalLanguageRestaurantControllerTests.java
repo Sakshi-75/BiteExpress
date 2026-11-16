@@ -114,6 +114,8 @@ class NaturalLanguageRestaurantControllerTests {
         mvc.perform(get("/v1/restaurants/search").param("q", "nearest restaurants")
                         .param("latitude", "91").param("longitude", "77"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_FILTER"));
+        mvc.perform(get("/v1/restaurants/search").param("sortBy", "cost"))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_FILTER"));
         verifyNoInteractions(searchService);
     }
 }

@@ -2,7 +2,7 @@
 
 BiteExpress is a Java 21 / Spring Boot 4.1.2 restaurant discovery API backed by MongoDB 8. It supports restaurant creation, CSV import, structured filters, distance search, and a small rule-based natural-language search. No LLM or vector service runs in the app.
 
-Read the offline [architecture report](docs/index.html), [performance evidence](docs/performance.md), and [proposed migration plan](docs/migration/migration-plan.md) for details.
+Read the offline [architecture report](docs/index.html), [performance evidence](docs/performance.md), [dataset notes](docs/data-quality.md), and [proposed migration plan](docs/migration/migration-plan.md) for details.
 
 ## Quick start
 
@@ -36,7 +36,7 @@ docker compose run --rm -e SPRING_MAIN_WEB_APPLICATION_TYPE=none -e BITEEXPRESS_
 
 The bundled country-code lookup contains the 15 code/name pairs transcribed from the source Excel mapping; the Excel file itself is not needed at runtime. The importer loads `data/country-codes.csv` once per run and embeds each resolved name alongside its numeric code. `BITEEXPRESS_IMPORT_COUNTRY_FILE` overrides the lookup path if your copy uses different codes. For an IDE import, also set `SPRING_MAIN_WEB_APPLICATION_TYPE=none` and the local MongoDB URI above.
 
-The importer streams rows in batches of 250. Stable UUIDs derived from source IDs make repeat imports idempotent; the last valid duplicate row wins. Missing names/IDs, unknown country codes, or malformed required values reject a row. Missing/unrated ratings stay null; invalid or (0, 0) coordinates become null without rejecting an otherwise valid row. Strings and cuisines are trimmed. Source currencies are preserved, including known country/currency anomalies.
+The importer reads UTF-8 in batches of 250. Stable UUIDs and insert-only upserts make repeat imports idempotent without overwriting existing records; older records with raw source IDs are left untouched. Missing names/IDs, unknown country codes, or malformed required values reject a row. See [dataset notes](docs/data-quality.md) for encoding anomalies, missing-value rules, and safe repair of older imports.
 
 ## API
 
@@ -47,7 +47,7 @@ The importer streams rows in batches of 250. Stable UUIDs derived from source ID
 | GET /v1/restaurants | Structured listing with filters and pagination. |
 | GET /v1/restaurants/search | Run structured filters; optionally parse supported phrases supplied in `q`. |
 
-Both listing endpoints accept name (partial), city, cuisine, minRating, maxCostForTwo with currency, latitude and longitude, radiusKm, page, size, sortBy, and sortDir. Filters combine with AND. Page is zero-based; size is 1–100. Sort fields are name, city, rating, cost, and distance. With coordinates, the default is nearest first; otherwise it is name ascending. Equal sort values use ID as a tiebreaker. Errors use HTTP 400 with `VALIDATION_FAILED` for POST fields, `INVALID_REQUEST` for malformed JSON, `INVALID_FILTER` for query parameters, or `UNSUPPORTED_SEARCH` for unsupported language; missing IDs return 404 with `RESTAURANT_NOT_FOUND`.
+Both listing endpoints accept name (partial), city, cuisine, minRating, maxCostForTwo with currency, latitude and longitude, radiusKm, page, size, sortBy, and sortDir. Filters combine with AND. Page is zero-based; size is 1–100. Sort fields are name, city, rating, cost, and distance; cost sorting also requires currency. With coordinates, the default is nearest first; otherwise it is name ascending. Equal sort values use ID as a tiebreaker. Errors use HTTP 400 with `VALIDATION_FAILED` for POST fields, `INVALID_REQUEST` for malformed JSON, `INVALID_FILTER` for query parameters, or `UNSUPPORTED_SEARCH` for unsupported language; missing IDs return 404 with `RESTAURANT_NOT_FOUND`.
 
 The natural-language parser recognizes phrases such as “best North Indian restaurants in Gurugram under Rs 800 for two” and “nearest Chinese restaurants within 5 km”. It supports city, known cuisine labels, best/top-rated, nearest, and rupee maximum-cost phrases. Gurgaon/Gurugram and Rs/INR/Indian Rupees(Rs.) are explicit search synonyms. Supply latitude and longitude for nearest or radius searches. Explicit query parameters override inferred values. Ambiguous, unsupported, and dish/menu-item requests return 400; use the structured cuisine parameter for other cuisine labels.
 
@@ -77,7 +77,3 @@ On Windows, use .\mvnw.cmd. Start Docker Desktop for verify. Integration tests u
 Read-only k6 workloads and MongoDB explain results are in [docs/performance.md](docs/performance.md).
 
 docker compose down stops services and preserves the MongoDB volume. Only use docker compose down --volumes when you intentionally want to remove all Compose MongoDB data.
-
-## AI-assisted development
-
-Codex assisted with implementation, test drafting, review, and documentation. The repository's tests and MongoDB-backed checks are used to verify behavior; the API does not use AI at runtime.

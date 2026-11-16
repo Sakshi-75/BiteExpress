@@ -21,6 +21,8 @@ class RestaurantSearchCriteriaTests {
         assertThrows(InvalidRestaurantSearchException.class,
                 () -> new RestaurantSearchCriteria(null, null, null, null, 100, null, 0, 20, null, null, null, null, null));
         assertThrows(InvalidRestaurantSearchException.class,
+                () -> new RestaurantSearchCriteria(null, null, null, null, null, null, 0, 20, "cost", null, null, null, null));
+        assertThrows(InvalidRestaurantSearchException.class,
                 () -> new RestaurantSearchCriteria(null, null, null, null, null, null, Integer.MAX_VALUE, 100, null, null, null, null, null));
     }
 

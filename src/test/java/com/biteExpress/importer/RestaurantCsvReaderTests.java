@@ -3,8 +3,10 @@ package com.biteExpress.importer;
 import com.biteExpress.model.Country;
 import com.biteExpress.model.Restaurant;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assumptions;
 
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -97,6 +99,20 @@ class RestaurantCsvReaderTests {
         assertNull(first.pricing().priceRange());
         assertNull(first.rating().text());
         assertNull(first.rating().votes());
+    }
+
+    @Test
+    void bundledFullDatasetIsStrictUtf8AndParsesWithoutReplacementCharacters() throws Exception {
+        Assumptions.assumeTrue(Files.exists(Path.of("data/zomato.csv")),
+                "The Docker image build intentionally excludes the full dataset");
+        String csv = Files.readString(Path.of("data/zomato.csv"), StandardCharsets.UTF_8);
+        assertFalse(csv.contains("\uFFFD"));
+        var lookup = new CountryCsvReader().read(
+                Files.newBufferedReader(Path.of("data/country-codes.csv"), StandardCharsets.UTF_8));
+        var summary = new RestaurantCsvReader().scan(new StringReader(csv), lookup, restaurant -> {});
+        assertEquals(9551, summary.totalRows());
+        assertEquals(9551, summary.validRows());
+        assertEquals(0, summary.rejectedRows());
     }
 
     private String sample() throws Exception { return Files.readString(Path.of("data/sample-restaurants.csv")); }

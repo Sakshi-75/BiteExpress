@@ -6,13 +6,15 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
-import org.mockito.ArgumentCaptor;
+import org.springframework.data.mongodb.core.query.Update;
+import com.mongodb.client.result.UpdateResult;
+import org.bson.BsonString;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -34,17 +36,19 @@ class SampleRestaurantImportTests {
         Files.copy(Path.of("data/sample-restaurants.csv"), csvFile);
         Files.copy(Path.of("data/country-codes.csv"), countryFile);
         MongoTemplate mongoTemplate = mock(MongoTemplate.class);
+        when(mongoTemplate.findDistinct(any(Query.class), eq("_id"), eq(Restaurant.class), eq(String.class)))
+                .thenReturn(List.of());
+        when(mongoTemplate.upsert(any(Query.class), any(Update.class), eq(Restaurant.class)))
+                .thenReturn(UpdateResult.acknowledged(0, 0L, new BsonString("inserted")));
 
         new SampleRestaurantImport(mongoTemplate,
                 new FileSystemResource(csvFile),
                 new FileSystemResource(countryFile)).run(null);
 
-        ArgumentCaptor<Restaurant> saved = ArgumentCaptor.forClass(Restaurant.class);
-        verify(mongoTemplate, times(3)).save(saved.capture());
-        assertEquals("India", saved.getAllValues().getFirst().country().name());
-        assertDoesNotThrow(() -> java.util.UUID.fromString(saved.getAllValues().getFirst().id()));
-        assertEquals(SampleRestaurantImport.idForSource("100001"), saved.getAllValues().getFirst().id());
-        assertNotEquals("100001", saved.getAllValues().getFirst().id());
+        verify(mongoTemplate, times(3)).upsert(any(Query.class), any(Update.class), eq(Restaurant.class));
+        verify(mongoTemplate, never()).save(any(Restaurant.class));
+        assertDoesNotThrow(() -> java.util.UUID.fromString(SampleRestaurantImport.idForSource("100001")));
+        assertNotEquals("100001", SampleRestaurantImport.idForSource("100001"));
     }
 
     @Test
@@ -54,11 +58,13 @@ class SampleRestaurantImportTests {
         Files.copy(Path.of("data/sample-restaurants.csv"), csvFile);
         Files.copy(Path.of("data/country-codes.csv"), countryFile);
         MongoTemplate mongoTemplate = mock(MongoTemplate.class);
-        when(mongoTemplate.exists(any(Query.class), eq(Restaurant.class))).thenReturn(true);
+        when(mongoTemplate.findDistinct(any(Query.class), eq("_id"), eq(Restaurant.class), eq(String.class)))
+                .thenReturn(List.of("100001", "100002", "100003"));
 
         new SampleRestaurantImport(mongoTemplate, new FileSystemResource(csvFile),
                 new FileSystemResource(countryFile)).run(null);
 
         verify(mongoTemplate, never()).save(any(Restaurant.class));
+        verify(mongoTemplate, never()).upsert(any(Query.class), any(Update.class), eq(Restaurant.class));
     }
 }

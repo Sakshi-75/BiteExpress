@@ -36,6 +36,8 @@ public record RestaurantSearchCriteria(
         sortBy = sortBy == null ? (latitude == null ? "name" : "distance") : sortBy.strip().toLowerCase(Locale.ROOT);
         if (!switch (sortBy) { case "name", "city", "rating", "cost", "distance" -> true; default -> false; })
             throw new InvalidRestaurantSearchException("sortBy must be name, city, rating, cost, or distance");
+        if (sortBy.equals("cost") && currency == null)
+            throw new InvalidRestaurantSearchException("currency is required when sorting by cost");
         if (sortBy.equals("distance") && latitude == null)
             throw new InvalidRestaurantSearchException("distance sorting requires latitude and longitude");
         sortDir = sortDir == null ? "asc" : sortDir.strip().toLowerCase(Locale.ROOT);

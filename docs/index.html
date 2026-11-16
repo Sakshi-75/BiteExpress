@@ -18,6 +18,9 @@
     main,.card,.metric,.diagram-panel,.table-wrap,.nav{min-width:0}pre{max-width:100%}
     @media(max-width:620px){.grid.two,.grid.three,.roadmap{grid-template-columns:minmax(0,1fr)}}
     @media print{html{scroll-behavior:auto}body{background:#fff;color:#000;font-size:11pt}.topbar,.hero-actions,.tabs{display:none!important}main{max-width:none;padding:0}.hero{background:#fff;color:#000;padding:1rem 0 2rem;border-radius:0}.hero p,.hero-meta span{color:#333}.hero:after{display:none}.metric-row{margin:0}.card,.metric,.diagram-panel,.table-wrap{box-shadow:none;break-inside:avoid}.diagram-panel[hidden]{display:block!important}.diagram-panel{margin-bottom:1rem}section{margin-top:2rem;break-before:auto}.diagram-svg{max-height:260px}.grid,.roadmap{gap:.6rem}a{color:#000}}
+    .chart-scroll{overflow-x:auto}.chart-svg{display:block;width:100%;height:auto}.chart-svg.plan-chart{max-width:820px;margin-inline:auto}.chart-svg text{font:12px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#526577}.chart-svg .axis,.chart-svg .gridline{fill:none}.chart-svg .axis{stroke:#9bb1ad;stroke-width:1.5}.chart-svg .gridline{stroke:#e1eae8;stroke-width:1}.chart-svg .strong{font-weight:800;fill:#18384a}.chart-legend{display:flex;gap:1rem;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin:.2rem 0 .6rem}.chart-legend span{display:inline-flex;align-items:center;gap:.35rem}.chart-legend i{width:12px;height:12px;border-radius:3px;display:inline-block}.chart-note{font-size:.84rem;color:var(--muted);margin:.45rem 0 0}.chart-card{overflow:hidden}.chart-card h3{margin-bottom:.2rem}
+    @media(max-width:620px){.chart-svg{min-width:520px}}
+    @media print{.chart-svg{min-width:0}}
   </style>
 </head>
 <body>
@@ -34,7 +37,7 @@
 
   <main id="main">
     <div class="hero" id="top">
-      <span class="eyebrow">MongoDB FDE assessment · Architecture &amp; proof of value</span>
+      <span class="eyebrow">Architecture &amp; proof of value</span>
       <h1>Restaurant discovery, grounded in working software.</h1>
       <p>A source-verified view of the BiteExpress MVP, measured search behavior, and a clearly labeled path from a local demonstration to a resilient production design.</p>
       <div class="hero-actions"><a class="button primary" href="#architecture">Explore architecture ↓</a><a class="button secondary" href="performance.md">See benchmark method ↗</a><a class="button secondary" href="migration/migration-plan.md">Migration strategy ↗</a></div>
@@ -134,16 +137,36 @@
         <tr><td><code>GET /v1/restaurants/search</code></td><td>Use structured filters directly, or parse supported city, cuisine, ranking, proximity, and INR-budget phrases when <code>q</code> is supplied. Explicit parameters win.</td><td>200</td><td>400 unsupported search or invalid filter</td></tr>
       </tbody></table></div>
       <div class="grid two" style="margin-top:1rem">
-        <article class="card"><h3>Search contract</h3><p>Pages are zero-based with size 1–100. Listing summaries expose address, city, country, cuisines, average rating, optional location, and <code>distanceKm</code> for nearby results. Distance sorting requires latitude and longitude. Cost filtering requires currency.</p></article>
+        <article class="card"><h3>Search contract</h3><p>Pages are zero-based with size 1–100. Listing summaries expose address, city, country, cuisines, average rating, optional location, and <code>distanceKm</code> for nearby results. Distance sorting requires latitude and longitude. Cost filtering and sorting require currency.</p></article>
         <article class="card"><h3>Validation &amp; errors</h3><p><code>@Valid</code> checks the POST body; search criteria validate filter ranges and combinations. Central <code>@RestControllerAdvice</code> returns <code>ProblemDetail</code> codes: <code>VALIDATION_FAILED</code>, <code>INVALID_REQUEST</code>, <code>INVALID_FILTER</code>, <code>UNSUPPORTED_SEARCH</code>, and <code>RESTAURANT_NOT_FOUND</code>.</p></article>
       </div>
     </section>
 
     <section id="evidence" aria-labelledby="evidence-title">
       <div class="section-head"><div><span class="kicker">05 / Performance &amp; proof of value</span><h2 id="evidence-title">What the measurements show</h2><p class="lede">Only the documented benchmark runs are shown here. These are local, short-duration observations, not production service-level objectives.</p></div><span class="tag measured">Measured</span></div>
-      <div class="grid two">
-        <article class="card"><h3>Mixed search workload · 10 seconds</h3><div class="bar-grid" aria-label="p95 response time by concurrency"><div class="bar-row"><span>1 VU</span><span class="bar-track"><span class="bar-fill" style="width:4.9%"></span></span><span class="num">22.59 ms</span></div><div class="bar-row"><span>10 VUs</span><span class="bar-track"><span class="bar-fill" style="width:33.9%"></span></span><span class="num">156.30 ms</span></div><div class="bar-row"><span>25 VUs</span><span class="bar-track"><span class="bar-fill" style="width:100%"></span></span><span class="num">461.53 ms</span></div></div><p class="table-note">Bars show p95 relative to the highest measured p95. No target threshold was defined.</p></article>
-        <article class="card"><h3>Test environment</h3><p>Windows 11 + Docker Desktop; rebuilt Java 21 app; MongoDB 8.0.38; k6 2.4.0 in a separate container. The local collection held 9,554 restaurants. Workloads were sequential, read-only GET requests with no deliberate think time.</p><p class="table-note">All measured requests passed status and response-shape checks; reported API error rate was 0% in these runs.</p></article>
+      <div class="callout"><strong>Recorded environment:</strong> Windows 11, Docker Desktop, Java 21 app, MongoDB 8.0.38, k6 2.4.0; 9,554 restaurant documents. Mixed-workload charts A and B show 16 November runs of 10 seconds at 1, 10, and 25 VUs. Endpoint and query-plan charts C and D show 17 November runs on an isolated, equally sized dataset; endpoint runs used 10 VUs for 5 seconds. All observed API checks passed (0% errors).</div>
+      <div class="grid two" style="margin-top:1rem">
+        <article class="card chart-card"><h3>A · Latency vs concurrency</h3><p class="chart-note">Mixed workload · milliseconds · lower is better</p>
+          <div class="chart-scroll"><svg class="chart-svg" viewBox="0 0 600 310" role="img" aria-label="Mixed workload latency in milliseconds at 1, 10 and 25 virtual users. p50: 15.98, 58.82, 211.41. p95: 22.59, 156.30, 461.53. p99: 34.98, 167.66, 501.29.">
+            <path class="gridline" d="M75 245H540 M75 154H540 M75 63H540"/><path class="axis" d="M75 42V245H540"/>
+            <text x="43" y="249">0</text><text x="29" y="158">250</text><text x="29" y="67">500</text><text x="7" y="24">ms</text>
+            <text x="73" y="269">1</text><text x="293" y="269">10</text><text x="513" y="269">25</text><text x="239" y="297">Virtual users</text>
+            <polyline points="80,239 300,224 520,168" fill="none" stroke="#007f70" stroke-width="3"/>
+            <polyline points="80,237 300,188 520,77" fill="none" stroke="#3366a4" stroke-width="3"/>
+            <polyline points="80,232 300,184 520,63" fill="none" stroke="#b46d1d" stroke-width="3"/>
+            <g fill="#007f70"><circle cx="80" cy="239" r="5"><title>1 VU p50: 15.98 ms</title></circle><circle cx="300" cy="224" r="5"><title>10 VUs p50: 58.82 ms</title></circle><circle cx="520" cy="168" r="5"><title>25 VUs p50: 211.41 ms</title></circle></g>
+            <g fill="#3366a4"><circle cx="80" cy="237" r="5"><title>1 VU p95: 22.59 ms</title></circle><circle cx="300" cy="188" r="5"><title>10 VUs p95: 156.30 ms</title></circle><circle cx="520" cy="77" r="5"><title>25 VUs p95: 461.53 ms</title></circle></g>
+            <g fill="#b46d1d"><circle cx="80" cy="232" r="5"><title>1 VU p99: 34.98 ms</title></circle><circle cx="300" cy="184" r="5"><title>10 VUs p99: 167.66 ms</title></circle><circle cx="520" cy="63" r="5"><title>25 VUs p99: 501.29 ms</title></circle></g>
+          </svg></div><div class="chart-legend" aria-label="Latency series"><span><i style="background:#007f70"></i>p50</span><span><i style="background:#3366a4"></i>p95</span><span><i style="background:#b46d1d"></i>p99</span></div>
+          <p class="chart-note">All three percentiles rose at 25 VUs. Exact values appear in the table below.</p></article>
+        <article class="card chart-card"><h3>B · Throughput vs concurrency</h3><p class="chart-note">Mixed workload · requests/second · higher is better</p>
+          <div class="chart-scroll"><svg class="chart-svg" viewBox="0 0 600 310" role="img" aria-label="Mixed workload throughput: 60.26 requests per second at 1 virtual user, 143.30 at 10, and 118.61 at 25.">
+            <path class="gridline" d="M75 245H540 M75 183H540 M75 120H540 M75 58H540"/><path class="axis" d="M75 42V245H540"/>
+            <text x="43" y="249">0</text><text x="36" y="187">50</text><text x="29" y="124">100</text><text x="29" y="62">150</text><text x="7" y="24">req/s</text>
+            <rect x="128" y="170" width="75" height="75" rx="5" fill="#007f70"/><rect x="278" y="66" width="75" height="179" rx="5" fill="#007f70"/><rect x="428" y="97" width="75" height="148" rx="5" fill="#b46d1d"/>
+            <text class="strong" x="132" y="160">60.26</text><text class="strong" x="280" y="56">143.30</text><text class="strong" x="429" y="87">118.61</text>
+            <text x="149" y="269">1</text><text x="298" y="269">10</text><text x="447" y="269">25</text><text x="239" y="297">Virtual users</text>
+          </svg></div><p class="chart-note">Throughput was lower at 25 than at 10 VUs in this short local run. This does not establish a production capacity limit.</p></article>
       </div>
       <div class="table-wrap" style="margin-top:1rem"><table><thead><tr><th>Mixed workload</th><th class="num">Requests</th><th class="num">Requests/s</th><th class="num">p50</th><th class="num">p95</th><th class="num">p99</th><th class="num">Errors</th></tr></thead><tbody>
         <tr><td>1 virtual user</td><td class="num">603</td><td class="num">60.26</td><td class="num">15.98 ms</td><td class="num">22.59 ms</td><td class="num">34.98 ms</td><td class="num">0%</td></tr>
@@ -151,10 +174,49 @@
         <tr><td>25 virtual users</td><td class="num">1,226</td><td class="num">118.61</td><td class="num">211.41 ms</td><td class="num">461.53 ms</td><td class="num">501.29 ms</td><td class="num">0%</td></tr>
       </tbody></table></div>
       <div class="grid two" style="margin-top:1rem">
-        <article class="card"><h3>Endpoint-specific p95 · 10 VUs, 5 seconds</h3><div class="table-wrap" style="box-shadow:none"><table><thead><tr><th>Workload</th><th class="num">p95</th><th class="num">Requests/s</th></tr></thead><tbody><tr><td>Listing</td><td class="num">61.71 ms</td><td class="num">174.64</td></tr><tr><td>Combined filters</td><td class="num">146.34 ms</td><td class="num">84.04</td></tr><tr><td>Geospatial</td><td class="num">42.14 ms</td><td class="num">263.29</td></tr><tr><td>Natural language</td><td class="num">198.41 ms</td><td class="num">58.55</td></tr></tbody></table></div></article>
-        <article class="card"><h3>Index proof</h3><p><code>explain("executionStats")</code> showed <code>GEO_NEAR_2DSPHERE → FETCH → IXSCAN</code> using <code>location_2dsphere</code>. Its geo cursor examined <strong>1,213 keys</strong> and <strong>980 documents</strong>; later filters reduced the nearby set to 215 matches.</p><p>Listing and representative combined/natural-language filters showed <code>COLLSCAN</code> of 9,554 documents. The default listing page also had a <code>SORT</code> stage.</p></article>
+        <article class="card chart-card"><h3>C · Endpoint p95 latency</h3><p class="chart-note">17 November · 10 VUs · 5 seconds · milliseconds · lower is better · linear axis</p><div class="chart-scroll"><svg class="chart-svg" viewBox="0 0 700 350" role="img" aria-label="Current endpoint p95 latency in milliseconds: listing 115.53, combined filters 145.22, geospatial 42.68, natural language 161.42, GET by ID 1.07.">
+          <path class="gridline" d="M170 40V310 M287 40V310 M403 40V310 M520 40V310 M590 40V310"/><path class="axis" d="M170 310H600"/>
+          <text x="8" y="76">Listing</text><text x="8" y="126">Combined filters</text><text x="8" y="176">Geospatial</text><text x="8" y="226">Natural language</text><text x="8" y="276">GET by ID</text>
+          <rect x="170" y="55" width="270" height="26" rx="4" fill="#3366a4"/><rect x="170" y="105" width="339" height="26" rx="4" fill="#3366a4"/><rect x="170" y="155" width="100" height="26" rx="4" fill="#3366a4"/><rect x="170" y="205" width="377" height="26" rx="4" fill="#3366a4"/><rect x="170" y="255" width="2.5" height="26" fill="#3366a4"/>
+          <text class="strong" x="448" y="74">115.53</text><text class="strong" x="517" y="124">145.22</text><text class="strong" x="278" y="174">42.68</text><text class="strong" x="555" y="224">161.42</text><text class="strong" x="182" y="274">1.07</text>
+          <text x="166" y="330">0</text><text x="277" y="330">50</text><text x="391" y="330">100</text><text x="508" y="330">150</text><text x="578" y="330">180</text><text x="382" y="348">ms</text>
+        </svg></div></article>
+        <article class="card chart-card"><h3>C · Endpoint throughput</h3><p class="chart-note">Same runs · requests/second · higher is better · logarithmic axis</p><div class="chart-scroll"><svg class="chart-svg" viewBox="0 0 700 350" role="img" aria-label="Current endpoint throughput in requests per second: listing 106.48, combined filters 87.95, geospatial 260.43, natural language 75.00, GET by ID 11987.70. Logarithmic horizontal axis.">
+          <path class="gridline" d="M170 40V310 M260 40V310 M350 40V310 M440 40V310 M530 40V310"/><path class="axis" d="M170 310H590"/>
+          <text x="8" y="76">Listing</text><text x="8" y="126">Combined filters</text><text x="8" y="176">Geospatial</text><text x="8" y="226">Natural language</text><text x="8" y="276">GET by ID</text>
+          <rect x="170" y="55" width="182" height="26" rx="4" fill="#007f70"/><rect x="170" y="105" width="175" height="26" rx="4" fill="#007f70"/><rect x="170" y="155" width="217" height="26" rx="4" fill="#007f70"/><rect x="170" y="205" width="169" height="26" rx="4" fill="#007f70"/><rect x="170" y="255" width="367" height="26" rx="4" fill="#007f70"/>
+          <text class="strong" x="360" y="74">106.48</text><text class="strong" x="353" y="124">87.95</text><text class="strong" x="395" y="174">260.43</text><text class="strong" x="347" y="224">75.00</text><text class="strong" x="545" y="274">11,987.70</text>
+          <text x="166" y="330">1</text><text x="252" y="330">10</text><text x="338" y="330">100</text><text x="423" y="330">1,000</text><text x="511" y="330">10,000</text><text x="345" y="348">requests/s · log scale</text>
+        </svg></div></article>
       </div>
-      <div class="callout warning" style="margin-top:1rem"><strong>Interpretation:</strong> Throughput fell and p95 increased at 25 VUs on this local setup. The endpoints use different filters and result counts, so their timings are not an index A/B test. No application optimization or business impact was measured.</div>
+      <p class="chart-note">Endpoint requests use different predicates and response sizes; these charts compare observed workloads, not equivalent A/B tests. The throughput axis is logarithmic so both indexed ID lookup and search results remain visible.</p>
+      <div class="table-wrap" style="margin-top:.7rem"><table><thead><tr><th>Endpoint workload</th><th class="num">Requests</th><th class="num">p50</th><th class="num">p95</th><th class="num">p99</th><th class="num">Requests/s</th><th class="num">Errors</th></tr></thead><tbody>
+        <tr><td>Listing</td><td class="num">537</td><td class="num">90.47 ms</td><td class="num">115.53 ms</td><td class="num">168.99 ms</td><td class="num">106.48</td><td class="num">0%</td></tr>
+        <tr><td>Combined filters</td><td class="num">445</td><td class="num">116.57 ms</td><td class="num">145.22 ms</td><td class="num">176.79 ms</td><td class="num">87.95</td><td class="num">0%</td></tr>
+        <tr><td>Geospatial</td><td class="num">1,306</td><td class="num">37.44 ms</td><td class="num">42.68 ms</td><td class="num">48.84 ms</td><td class="num">260.43</td><td class="num">0%</td></tr>
+        <tr><td>Natural language</td><td class="num">381</td><td class="num">135.33 ms</td><td class="num">161.42 ms</td><td class="num">186.67 ms</td><td class="num">75.00</td><td class="num">0%</td></tr>
+        <tr><td>GET by ID</td><td class="num">59,948</td><td class="num">0.68 ms</td><td class="num">1.07 ms</td><td class="num">1.54 ms</td><td class="num">11,987.70</td><td class="num">0%</td></tr>
+      </tbody></table></div>
+      <article class="card chart-card" style="margin-top:1rem"><h3>D · MongoDB query-plan evidence</h3><p class="chart-note">17 November · documents and keys examined · fewer is generally better for the same query</p>
+        <div class="chart-legend"><span><i style="background:#3366a4"></i>Documents examined</span><span><i style="background:#b46d1d"></i>Index keys examined</span></div>
+        <div class="chart-scroll"><svg class="chart-svg plan-chart" viewBox="0 0 600 380" role="img" aria-label="Listing, combined, and natural-language count queries each scanned 9,554 documents and zero keys. Geospatial count used location_2dsphere and examined 980 documents and 1,213 keys. GET by ID used the _id_ index and examined one document and one key.">
+          <path class="gridline" d="M190 35V325 M360 35V325 M530 35V325"/><path class="axis" d="M190 325H540"/>
+          <text x="12" y="65">Listing count</text><text x="12" y="119">Combined count</text><text x="12" y="173">Geospatial count</text><text x="12" y="227">Language count</text><text x="12" y="282">GET by ID</text>
+          <rect x="190" y="48" width="325" height="18" rx="3" fill="#3366a4"/><text class="strong" x="519" y="63">9,554</text><text x="196" y="87">0 keys</text>
+          <rect x="190" y="102" width="325" height="18" rx="3" fill="#3366a4"/><text class="strong" x="519" y="117">9,554</text><text x="196" y="141">0 keys</text>
+          <rect x="190" y="156" width="33" height="18" rx="3" fill="#3366a4"/><text class="strong" x="230" y="171">980</text><rect x="190" y="179" width="41" height="13" rx="3" fill="#b46d1d"/><text class="strong" x="239" y="190">1,213 keys</text>
+          <rect x="190" y="210" width="325" height="18" rx="3" fill="#3366a4"/><text class="strong" x="519" y="225">9,554</text><text x="196" y="249">0 keys</text>
+          <circle cx="190" cy="271" r="3" fill="#3366a4"/><circle cx="190" cy="291" r="3" fill="#b46d1d"/><text class="strong" x="202" y="276">1 document</text><text class="strong" x="202" y="296">1 key</text>
+          <text x="186" y="346">0</text><text x="345" y="346">5,000</text><text x="510" y="346">10,000</text><text x="304" y="368">items examined</text>
+        </svg></div><p class="chart-note">The ID lookup used <code>_id_</code>; geospatial queries used <code>location_2dsphere</code>. The one-item markers are too small to form visible bars at this scale. Different predicates and result sets make scan counts unsuitable as a direct speed comparison.</p></article>
+      <div class="table-wrap" style="margin-top:1rem"><table><thead><tr><th>Query</th><th>Winning plan</th><th>Index</th><th class="num">Keys</th><th class="num">Documents</th><th class="num">Execution</th></tr></thead><tbody>
+        <tr><td>Listing count</td><td><code>GROUP → COLLSCAN</code></td><td>None</td><td class="num">0</td><td class="num">9,554</td><td class="num">1 ms</td></tr>
+        <tr><td>Combined count</td><td><code>GROUP → COLLSCAN</code></td><td>None</td><td class="num">0</td><td class="num">9,554</td><td class="num">5 ms</td></tr>
+        <tr><td>Geospatial count</td><td><code>GEO_NEAR_2DSPHERE → FETCH → IXSCAN</code></td><td><code>location_2dsphere</code></td><td class="num">1,213</td><td class="num">980</td><td class="num">7 ms</td></tr>
+        <tr><td>Natural-language count</td><td><code>GROUP → COLLSCAN</code></td><td>None</td><td class="num">0</td><td class="num">9,554</td><td class="num">6 ms</td></tr>
+        <tr><td>GET by ID</td><td><code>EXPRESS_IXSCAN</code></td><td><code>_id_</code></td><td class="num">1</td><td class="num">1</td><td class="num">0 ms</td></tr>
+      </tbody></table></div>
+      <div class="callout warning" style="margin-top:1rem"><strong>Interpretation:</strong> These were short local read-only runs with no production SLO or proven capacity limit. Charts A and B are historical; charts C and D use the current isolated setup. No before/after API performance improvement was measured. Separate geospatial count and page aggregations remain because a <code>$facet</code> replacement has no measured benefit here.</div>
       <p class="table-note">Commands, full p50/p95/p99 tables, and query-plan details: <a href="performance.md">Performance report ↗</a>.</p>
     </section>
 
@@ -180,10 +242,11 @@
 
     <section id="limits" aria-labelledby="limits-title">
       <div class="section-head"><div><span class="kicker">08 / Evidence boundaries</span><h2 id="limits-title">What is known, and what is not</h2></div></div>
-      <div class="grid three">
+      <div class="grid two">
         <article class="card"><h3>Implemented &amp; tested</h3><p>Four endpoints, CSV import, validation, structured and geospatial MongoDB queries, a bounded natural-language parser, Swagger, and Testcontainers-backed API tests. The load and explain scripts are repeatable.</p></article>
         <article class="card"><h3>Unmeasured or assumed</h3><p>The legacy system is conceptual. Production traffic, availability, recovery time, cost, and business impact were not measured. The short local benchmarks do not prove scaling behavior or a before/after improvement.</p></article>
-        <article class="card"><h3>Data boundary</h3><p>The checkout includes <code>data/zomato.csv</code> for full imports, plus a three-row synthetic fixture and <code>data/country-codes.csv</code> for country names. Kaggle labels the source dataset CC0: Public Domain.</p></article>
+        <article class="card"><h3>Data boundary</h3><p>The checkout includes <code>data/zomato.csv</code> for full imports, plus a three-row synthetic fixture and <code>data/country-codes.csv</code> for country names. Kaggle labels the dataset CC0: Public Domain. The source has pre-existing text anomalies; see <a href="data-quality.md">encoding and repair notes</a>.</p></article>
+        <article class="card"><h3>Development provenance</h3><p>AI assistance supported implementation, test drafting, review, and documentation. Behavior was checked with automated tests and MongoDB-backed verification; no AI model runs in the API.</p></article>
       </div>
     </section>
 

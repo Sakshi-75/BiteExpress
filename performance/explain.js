@@ -80,3 +80,10 @@ report('geo-page', restaurants.explain('executionStats').aggregate([
   { $sort: { distanceMeters: 1, _id: 1 } }, { $skip: 0 }, { $limit: 20 },
 ]));
 report('natural-count', restaurants.explain('executionStats').aggregate([{ $match: natural }, { $count: 'total' }]));
+const restaurantId = process.env.RESTAURANT_ID;
+if (restaurantId) {
+  if (!restaurants.findOne({ _id: restaurantId }, { _id: 1 })) {
+    throw new Error('RESTAURANT_ID does not exist in this database');
+  }
+  report('get-by-id', restaurants.find({ _id: restaurantId }).limit(1).explain('executionStats'));
+}

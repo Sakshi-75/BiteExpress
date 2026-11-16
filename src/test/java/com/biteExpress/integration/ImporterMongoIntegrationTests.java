@@ -63,6 +63,12 @@ class ImporterMongoIntegrationTests {
         importer.run(null);
         assertEquals(1, repository.count());
         assertEquals("Final Name", repository.findById(persistedId).orElseThrow().name());
+
+        template.save(new Restaurant(persistedId, "API-edited name", saved.address(), saved.country(),
+                saved.location(), saved.cuisines(), saved.pricing(), saved.rating(), saved.features()));
+        importer.run(null);
+        assertEquals(1, repository.count());
+        assertEquals("API-edited name", repository.findById(persistedId).orElseThrow().name());
     }
 
     @Test
@@ -91,6 +97,8 @@ class ImporterMongoIntegrationTests {
         for (int index = 0; index < 251; index++) {
             csv.append(lines[1].replaceFirst("100001", Integer.toString(200000 + index))).append('\n');
         }
+        csv.append(lines[1].replaceFirst("100001", "200000")
+                .replace("Spice Garden", "Last duplicate across batches")).append('\n');
         Path file = tempDir.resolve("more-than-one-batch.csv");
         Files.writeString(file, csv);
 
@@ -100,6 +108,25 @@ class ImporterMongoIntegrationTests {
         assertEquals(251, repository.count());
         assertTrue(repository.existsById(importedId("200000")));
         assertTrue(repository.existsById(importedId("200250")));
+        assertEquals("Last duplicate across batches", repository.findById(importedId("200000")).orElseThrow().name());
+    }
+
+    @Test
+    void importsUtf8AccentsWithoutReplacementCharacters() throws Exception {
+        String[] lines = Files.readString(Path.of("data/sample-restaurants.csv")).split("\\R");
+        Path file = tempDir.resolve("unicode-restaurants.csv");
+        Files.writeString(file, lines[0] + "\n" + lines[1]
+                .replace("Spice Garden", "Café da Sé")
+                .replace("New Delhi", "São Paulo")
+                .replace(",1,São Paulo,", ",30,São Paulo,") + "\n", StandardCharsets.UTF_8);
+
+        new SampleRestaurantImport(template, new FileSystemResource(file),
+                new FileSystemResource(Path.of("data/country-codes.csv"))).run(null);
+
+        Restaurant saved = repository.findById(importedId("100001")).orElseThrow();
+        assertEquals("Café da Sé", saved.name());
+        assertEquals("São Paulo", saved.address().city());
+        assertEquals("Brazil", saved.country().name());
     }
 
     @Test

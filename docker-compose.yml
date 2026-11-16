@@ -6,7 +6,7 @@ services:
     image: bite-express:local
     container_name: bite-express
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       SPRING_MONGODB_URI: mongodb://mongo:27017/biteexpress
     volumes:

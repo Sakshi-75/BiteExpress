@@ -52,7 +52,7 @@ public class NaturalLanguageRestaurantController {
             @Parameter(description = "Maximum distance in kilometers; overrides a radius inferred from q") @RequestParam(required = false) Double radiusKm,
             @Parameter(description = "Zero-based page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size from 1 to 100") @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "Sort by name, city, rating, cost, or distance; overrides q") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Sort by name, city, rating, cost (requires currency), or distance (requires coordinates); overrides q") @RequestParam(required = false) String sortBy,
             @Parameter(description = "Sort direction asc or desc; overrides q") @RequestParam(required = false) String sortDir
     ) {
         if (q == null) {

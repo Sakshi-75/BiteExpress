@@ -11,6 +11,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStreamReader;
@@ -18,7 +19,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Component
@@ -48,14 +52,16 @@ public class SampleRestaurantImport implements ApplicationRunner {
             var countries = new CountryCsvReader().read(countryReader);
             List<Restaurant> batch = new ArrayList<>(BATCH_SIZE);
             var counts = new ImportCounts();
+            Set<String> insertedThisRun = new HashSet<>();
             var summary = new RestaurantCsvReader().scan(reader, countries, restaurant -> {
                 batch.add(restaurant);
-                if (batch.size() == BATCH_SIZE) saveBatch(batch, counts);
+                if (batch.size() == BATCH_SIZE) saveBatch(batch, counts, insertedThisRun);
             });
-            saveBatch(batch, counts);
+            saveBatch(batch, counts, insertedThisRun);
             if (summary.validRows() == 0) throw new IllegalStateException("Import contained no valid restaurant rows: " + file.getDescription());
-            log.info("Restaurant import from {}: rows={}, valid={}, saved/upserted={}, skippedLegacy={}, rejected={}, unavailableLocations={}, duration={}ms, rejectionReasons={}, examples={}",
-                    file.getDescription(), summary.totalRows(), summary.validRows(), counts.saved, counts.skippedLegacy,
+            log.info("Restaurant import from {}: rows={}, valid={}, inserted={}, skippedLegacy={}, skippedExisting={}, inBatchDuplicates={}, laterDuplicateUpdates={}, rejected={}, failed=0, unavailableLocations={}, duration={}ms, rejectionReasons={}, examples={}",
+                    file.getDescription(), summary.totalRows(), summary.validRows(), counts.inserted, counts.skippedLegacy,
+                    counts.skippedExisting, counts.inBatchDuplicates, counts.duplicateUpdates,
                     summary.rejectedRows(), summary.unavailableLocations(), Duration.between(started, Instant.now()).toMillis(),
                     summary.reasons(), summary.examples());
         }
@@ -65,23 +71,54 @@ public class SampleRestaurantImport implements ApplicationRunner {
         return UUID.nameUUIDFromBytes(("biteexpress:restaurant:" + sourceId).getBytes(StandardCharsets.UTF_8)).toString();
     }
 
-    private void saveBatch(List<Restaurant> batch, ImportCounts counts) {
-        for (Restaurant restaurant : batch) {
-            String sourceId = restaurant.id();
-            if (mongoTemplate.exists(Query.query(Criteria.where("_id").is(sourceId)), Restaurant.class)) {
-                counts.skippedLegacy++;
-                continue;
+    private void saveBatch(List<Restaurant> batch, ImportCounts counts, Set<String> insertedThisRun) {
+        if (batch.isEmpty()) return;
+        LinkedHashMap<String, Restaurant> latest = new LinkedHashMap<>();
+        for (Restaurant restaurant : batch) latest.put(restaurant.id(), restaurant);
+        counts.inBatchDuplicates += batch.size() - latest.size();
+        Set<String> legacyIds = new HashSet<>(mongoTemplate.findDistinct(
+                Query.query(Criteria.where("_id").in(latest.keySet())), "_id", Restaurant.class, String.class));
+        try {
+            for (Restaurant restaurant : latest.values()) {
+                String sourceId = restaurant.id();
+                if (legacyIds.contains(sourceId)) {
+                    counts.skippedLegacy++;
+                    continue;
+                }
+                String id = idForSource(sourceId);
+                Restaurant imported = new Restaurant(id, restaurant.name(), restaurant.address(),
+                        restaurant.country(), restaurant.location(), restaurant.cuisines(), restaurant.pricing(),
+                        restaurant.rating(), restaurant.features());
+                if (insertedThisRun.contains(id)) {
+                    mongoTemplate.save(imported); // Preserve the last valid duplicate within this import only.
+                    counts.duplicateUpdates++;
+                    continue;
+                }
+                Update insertOnly = new Update().setOnInsert("name", imported.name())
+                        .setOnInsert("address", imported.address()).setOnInsert("country", imported.country())
+                        .setOnInsert("location", imported.location()).setOnInsert("cuisines", imported.cuisines())
+                        .setOnInsert("pricing", imported.pricing()).setOnInsert("rating", imported.rating())
+                        .setOnInsert("features", imported.features());
+                var result = mongoTemplate.upsert(Query.query(Criteria.where("_id").is(id)), insertOnly, Restaurant.class);
+                if (result.getUpsertedId() == null) counts.skippedExisting++;
+                else {
+                    counts.inserted++;
+                    insertedThisRun.add(id);
+                }
             }
-            mongoTemplate.save(new Restaurant(idForSource(sourceId), restaurant.name(), restaurant.address(),
-                    restaurant.country(), restaurant.location(), restaurant.cuisines(), restaurant.pricing(),
-                    restaurant.rating(), restaurant.features()));
-            counts.saved++;
+        } catch (RuntimeException error) {
+            log.error("Restaurant import batch failed; batchRows={}, insertedBeforeFailure={}, exact failed-record count unavailable",
+                    batch.size(), counts.inserted, error);
+            throw error;
         }
         batch.clear();
     }
 
     private static final class ImportCounts {
-        long saved;
+        long inserted;
         long skippedLegacy;
+        long skippedExisting;
+        long inBatchDuplicates;
+        long duplicateUpdates;
     }
 }

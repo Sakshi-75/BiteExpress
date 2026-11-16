@@ -8,7 +8,7 @@ if (!Number.isInteger(virtualUsers) || virtualUsers < 1) {
   throw new Error('Set PROFILE to smoke, small, or medium, or set VUS to a positive integer');
 }
 
-const baseUrl = (__ENV.BASE_URL || 'http://host.docker.internal:8080').replace(/\/$/, '');
+const baseUrl = (__ENV.BASE_URL || 'http://app:8080').replace(/\/$/, '');
 const duration = __ENV.DURATION || '15s';
 const workload = __ENV.WORKLOAD || 'all';
 const paths = {
@@ -18,8 +18,15 @@ const paths = {
   natural: '/v1/restaurants/search?q=best%20North%20Indian%20restaurants%20in%20Gurugram%20under%20Rs%202000%20for%20two&page=0&size=20',
 };
 const selected = workload === 'all' ? Object.keys(paths) : [workload];
-if (selected.some((name) => !paths[name])) {
-  throw new Error('WORKLOAD must be all, listing, combined, geo, or natural');
+if (selected.some((name) => name !== 'id' && !paths[name])) {
+  throw new Error('WORKLOAD must be all, id, listing, combined, geo, or natural');
+}
+const restaurantId = __ENV.RESTAURANT_ID;
+if (selected.includes('id')) {
+  if (!restaurantId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(restaurantId)) {
+    throw new Error('Set RESTAURANT_ID to an existing restaurant UUID for WORKLOAD=id');
+  }
+  paths.id = `/v1/restaurants/${encodeURIComponent(restaurantId)}`;
 }
 
 const apiErrors = new Rate('api_errors');
@@ -34,9 +41,10 @@ export default function () {
   const response = http.get(baseUrl + paths[name], { tags: { workload: name }, timeout: '30s' });
   const valid = check(response, {
     'HTTP 200': (r) => r.status === 200,
-    'page response': (r) => {
+    'expected response': (r) => {
       try {
         const body = r.json();
+        if (name === 'id') return body.id === restaurantId;
         return Array.isArray(body.content) && body.page === 0 &&
           Number.isInteger(body.totalElements) && Number.isInteger(body.totalPages);
       } catch (_) {
