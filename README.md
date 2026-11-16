@@ -59,6 +59,8 @@ Existing databases may contain restaurants imported before UUID IDs were introdu
 
 `POST /v1/restaurants` creates a restaurant and returns `201 Created` with the complete restaurant JSON. It does not send a `Location` header. `GET /v1/restaurants/{id}` returns the same representation with `200 OK`, or a `404` problem response when the ID is absent. GET looks up the supplied ID without special handling. Names need not be unique.
 
+Interactive API documentation is available at [Swagger UI](http://localhost:8080/swagger-ui/index.html), with the OpenAPI JSON at [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs). Start the app, open Swagger UI, expand an endpoint, and select **Try it out** to send a request. Swagger currently shows POST and GET by ID; a restaurant listing endpoint and its query parameters are not implemented yet.
+
 Example creation request:
 
 ```sh
