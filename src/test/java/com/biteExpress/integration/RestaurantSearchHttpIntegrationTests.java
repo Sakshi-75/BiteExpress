@@ -19,6 +19,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -127,6 +130,78 @@ class RestaurantSearchHttpIntegrationTests {
                 .andExpect(jsonPath("$.pricing").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.rating").value(org.hamcrest.Matchers.nullValue()))
                 .andExpect(jsonPath("$.features").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    void nearbySearchOrdersByDistanceAndCreates2dsphereIndex() throws Exception {
+        move(B, 77.0366);
+        move(D, 77.0466);
+        mvc.perform(get("/v1/restaurants").param("latitude", "28.4595").param("longitude", "77.0266"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.content[0].id").value(A))
+                .andExpect(jsonPath("$.content[0].distanceKm").value(0.0))
+                .andExpect(jsonPath("$.content[1].id").value(B))
+                .andExpect(jsonPath("$.content[1].distanceKm").value(closeTo(0.98, 0.1)))
+                .andExpect(jsonPath("$.content[2].id").value(D))
+                .andExpect(jsonPath("$.content[2].distanceKm").value(closeTo(1.95, 0.1)));
+        mvc.perform(get("/v1/restaurants").param("latitude", "28.4595").param("longitude", "77.0266")
+                        .param("sortBy", "distance").param("sortDir", "desc"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].id").value(D));
+        assertTrue(mongoTemplate.getCollection("restaurants").listIndexes().into(new java.util.ArrayList<>())
+                .stream().anyMatch(index -> "2dsphere".equals(index.get("key", org.bson.Document.class).getString("location"))));
+    }
+
+    @Test
+    void radiusCombinesWithExistingFiltersAndExcludesMissingLocations() throws Exception {
+        move(B, 77.0366);
+        move(D, 77.0466);
+        mvc.perform(get("/v1/restaurants").param("latitude", "28.4595").param("longitude", "77.0266")
+                        .param("radiusKm", "1.2").param("name", "SPICE").param("city", "gUrGaOn")
+                        .param("cuisine", "indian").param("minRating", "4")
+                        .param("maxCostForTwo", "800").param("currency", "inr"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.content[0].id").value(A))
+                .andExpect(jsonPath("$.content[1].id").value(B));
+        mvc.perform(get("/v1/restaurants").param("latitude", "28.4595").param("longitude", "77.0266")
+                        .param("radiusKm", "0.5"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1));
+        mvc.perform(get("/v1/restaurants").param("latitude", "28.4595").param("longitude", "77.0266")
+                        .param("radiusKm", "0"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].distanceKm").value(0.0));
+        mvc.perform(get("/v1/restaurants").param("latitude", "28.4595").param("longitude", "77.0266")
+                        .param("radiusKm", "0.1").param("name", "Cafe"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(0));
+        mvc.perform(get("/v1/restaurants").param("name", "Cafe"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].distanceKm").value(nullValue()));
+    }
+
+    @Test
+    void nearbyPaginationAndExplicitNonDistanceSortRemainDeterministic() throws Exception {
+        mvc.perform(get("/v1/restaurants").param("latitude", "28.4595").param("longitude", "77.0266")
+                        .param("name", "Spice House").param("size", "1").param("page", "1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].id").value(B));
+        move(B, 77.0366);
+        move(D, 77.0466);
+        mvc.perform(get("/v1/restaurants").param("latitude", "28.4595").param("longitude", "77.0266")
+                        .param("size", "1").param("page", "1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.totalPages").value(3))
+                .andExpect(jsonPath("$.content[0].id").value(B));
+        mvc.perform(get("/v1/restaurants").param("latitude", "28.4595").param("longitude", "77.0266")
+                        .param("sortBy", "rating").param("sortDir", "desc"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].id").value(D));
+        mvc.perform(get("/v1/restaurants").param("latitude", "28.4595").param("longitude", "77.0266")
+                        .param("name", "Spice House").param("size", "1").param("page", "3"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.content.length()").value(0));
+    }
+
+    private void move(String id, double longitude) {
+        Restaurant old = repository.findById(id).orElseThrow();
+        repository.save(new Restaurant(old.id(), old.name(), old.address(), old.country(),
+                new GeoJsonPoint(longitude, 28.4595), old.cuisines(), old.pricing(), old.rating(), old.features()));
     }
 
     private Restaurant restaurant(String id, String name, String city, String cuisine,

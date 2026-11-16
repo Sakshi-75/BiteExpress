@@ -6,7 +6,7 @@ import java.util.Locale;
 public record RestaurantSearchCriteria(
         String name, String city, String cuisine, Double minRating,
         Integer maxCostForTwo, String currency, int page, int size,
-        String sortBy, String sortDir
+        String sortBy, String sortDir, Double latitude, Double longitude, Double radiusKm
 ) {
     public RestaurantSearchCriteria {
         name = normalize(name);
@@ -23,9 +23,21 @@ public record RestaurantSearchCriteria(
         if (size < 1 || size > 100) throw new InvalidRestaurantSearchException("size must be between 1 and 100");
         if ((long) page * size > Integer.MAX_VALUE)
             throw new InvalidRestaurantSearchException("page is too large");
-        sortBy = sortBy == null ? "name" : sortBy.strip().toLowerCase(Locale.ROOT);
-        if (!switch (sortBy) { case "name", "city", "rating", "cost" -> true; default -> false; })
-            throw new InvalidRestaurantSearchException("sortBy must be name, city, rating, or cost");
+        if ((latitude == null) != (longitude == null))
+            throw new InvalidRestaurantSearchException("latitude and longitude must be supplied together");
+        if (latitude != null && (!Double.isFinite(latitude) || latitude < -90 || latitude > 90))
+            throw new InvalidRestaurantSearchException("latitude must be between -90 and 90");
+        if (longitude != null && (!Double.isFinite(longitude) || longitude < -180 || longitude > 180))
+            throw new InvalidRestaurantSearchException("longitude must be between -180 and 180");
+        if (radiusKm != null && (!Double.isFinite(radiusKm) || radiusKm < 0 || radiusKm > Double.MAX_VALUE / 1000))
+            throw new InvalidRestaurantSearchException("radiusKm must be a nonnegative finite distance");
+        if (radiusKm != null && latitude == null)
+            throw new InvalidRestaurantSearchException("radiusKm requires latitude and longitude");
+        sortBy = sortBy == null ? (latitude == null ? "name" : "distance") : sortBy.strip().toLowerCase(Locale.ROOT);
+        if (!switch (sortBy) { case "name", "city", "rating", "cost", "distance" -> true; default -> false; })
+            throw new InvalidRestaurantSearchException("sortBy must be name, city, rating, cost, or distance");
+        if (sortBy.equals("distance") && latitude == null)
+            throw new InvalidRestaurantSearchException("distance sorting requires latitude and longitude");
         sortDir = sortDir == null ? "asc" : sortDir.strip().toLowerCase(Locale.ROOT);
         if (!sortDir.equals("asc") && !sortDir.equals("desc"))
             throw new InvalidRestaurantSearchException("sortDir must be asc or desc");

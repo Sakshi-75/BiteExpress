@@ -1,5 +1,6 @@
 package com.biteExpress.api;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
 public record RestaurantSearchResponse(
@@ -17,6 +18,8 @@ public record RestaurantSearchResponse(
             RestaurantResponse.CountryResponse country,
             List<String> cuisines,
             Double averageRating,
-            RestaurantResponse.LocationResponse location
+            RestaurantResponse.LocationResponse location,
+            @Schema(description = "Spherical distance from the search center in kilometers; null without coordinates", example = "1.2")
+            Double distanceKm
     ) {}
 }

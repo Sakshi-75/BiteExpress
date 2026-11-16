@@ -63,7 +63,7 @@ Interactive API documentation is available at [Swagger UI](http://localhost:8080
 
 ### Structured search
 
-`GET /v1/restaurants` returns a page of restaurant summaries. Supplied filters combine with AND; omitted filters do not limit results. Search and pagination execute in MongoDB. The response includes `content`, zero-based `page`, `size`, `totalElements`, and `totalPages`. Each summary has `id`, `name`, an embedded `address` (`line1`, `city`, `locality`, `localityVerbose`), a top-level `city`, `country` (`code` and `name`), `cuisines`, `averageRating`, and `location` (`latitude`, `longitude`). Missing ratings and locations appear as `null`; unrated restaurants do not match `minRating`. Empty results return `content: []` and zero totals.
+`GET /v1/restaurants` returns a page of restaurant summaries. Supplied filters combine with AND; omitted filters do not limit results. Search and pagination execute in MongoDB. The response includes `content`, zero-based `page`, `size`, `totalElements`, and `totalPages`. Each summary has `id`, `name`, an embedded `address` (`line1`, `city`, `locality`, `localityVerbose`), a top-level `city`, `country` (`code` and `name`), `cuisines`, `averageRating`, `location` (`latitude`, `longitude`), and optional `distanceKm`. Missing ratings and locations appear as `null`; unrated restaurants do not match `minRating`. Empty results return `content: []` and zero totals.
 
 | Parameter | Meaning |
 | --- | --- |
@@ -73,9 +73,11 @@ Interactive API documentation is available at [Swagger UI](http://localhost:8080
 | `minRating` | Minimum average rating, inclusive, from 0 to 5. |
 | `maxCostForTwo` | Maximum nonnegative cost for two, inclusive. Requires `currency`. Restaurants without a cost do not match. |
 | `currency` | Case-insensitive exact source currency; can also filter on its own. |
+| `latitude`, `longitude` | Search center in decimal degrees. Supply both; latitude must be -90 to 90 and longitude -180 to 180. Only restaurants with valid stored locations are included. |
+| `radiusKm` | Optional inclusive maximum distance in kilometers; nonnegative and requires both coordinates. Without it, all located restaurants can match. |
 | `page` | Zero-based page number; defaults to 0. |
 | `size` | Page size from 1 to 100; defaults to 20. |
-| `sortBy` | `name` (default), `city`, `rating`, or `cost`. |
+| `sortBy` | `name` (default without coordinates), `city`, `rating`, `cost`, or `distance` (default with coordinates). Distance requires coordinates. |
 | `sortDir` | `asc` (default) or `desc`. Equal sort values are ordered by ID ascending. |
 
 For example:
@@ -83,9 +85,11 @@ For example:
 ```sh
 curl 'http://localhost:8080/v1/restaurants?city=Gurgaon&cuisine=Indian&minRating=4&sortBy=rating&sortDir=desc&page=0&size=10'
 curl 'http://localhost:8080/v1/restaurants?maxCostForTwo=800&currency=Indian%20Rupees%28Rs.%29'
+curl 'http://localhost:8080/v1/restaurants?latitude=28.4595&longitude=77.0266&radiusKm=5&cuisine=Indian&page=0&size=10'
+curl 'http://localhost:8080/v1/restaurants?latitude=28.4595&longitude=77.0266&sortBy=distance&sortDir=desc'
 ```
 
-Invalid query values return HTTP 400 with `code: "INVALID_REQUEST"`. Search is a structured listing; it does not calculate distance or interpret natural language. The search uses no new MongoDB indexes: the available filters include case-insensitive regex matching and multiple sort choices, so a single index would not reliably serve them. This can be revisited with query plans and production data.
+Invalid query values return HTTP 400 with `code: "INVALID_REQUEST"`. Nearby searches use MongoDB's indexed `$geoNear`; `distanceKm` is MongoDB's spherical distance in meters divided by 1,000. Nearest first is the default; `sortDir=desc` with `sortBy=distance` returns farthest first. An explicit non-distance sort still works with coordinates and uses ID to break ties. The application ensures a `2dsphere` index on `location` on the first nearby request; this adds an index without changing documents. Records without a location remain visible in ordinary searches. Natural-language search is not implemented.
 
 Example creation request:
 

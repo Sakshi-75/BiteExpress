@@ -108,7 +108,10 @@ class RestaurantControllerTests {
     void invalidSearchParametersReturnStructured400BeforeQuerying() throws Exception {
         List<String> invalid = List.of(
                 "maxCostForTwo=100", "minRating=6", "minRating=NaN", "page=-1",
-                "size=0", "size=101", "sortBy=unknown", "sortDir=sideways", "minRating=oops");
+                "size=0", "size=101", "sortBy=unknown", "sortDir=sideways", "minRating=oops",
+                "latitude=28", "longitude=77", "radiusKm=1", "sortBy=distance",
+                "latitude=91&longitude=77", "latitude=28&longitude=181",
+                "latitude=28&longitude=77&radiusKm=-1", "latitude=oops&longitude=77");
         for (String query : invalid) {
             mvc.perform(get("/v1/restaurants?" + query))
                     .andExpect(status().isBadRequest())

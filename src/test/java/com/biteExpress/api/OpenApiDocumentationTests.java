@@ -33,6 +33,10 @@ class OpenApiDocumentationTests {
             assertTrue(json.contains("/v1/restaurants/{id}"));
             assertTrue(json.contains("\"get\""));
             assertTrue(json.contains("maxCostForTwo"));
+            assertTrue(json.contains("radiusKm"));
+            assertTrue(json.contains("latitude"));
+            assertTrue(json.contains("longitude"));
+            assertTrue(json.contains("distanceKm"));
             assertTrue(json.contains("\"201\""));
             assertTrue(json.contains("\"200\""));
             assertTrue(json.contains("\"400\""));

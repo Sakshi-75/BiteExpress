@@ -36,7 +36,7 @@ public class RestaurantController {
     }
 
     @GetMapping
-    @Operation(summary = "Search restaurants", description = "Combines supplied filters with AND logic. Results are sorted by the selected field and then ID. Missing ratings or costs do not match their respective numeric filters.")
+    @Operation(summary = "Search restaurants", description = "Combines supplied filters with AND logic. Supply latitude and longitude to search located restaurants by distance; radiusKm limits results. Nearby results default to nearest first. Results use ID as a stable tiebreaker. Missing ratings or costs do not match their respective numeric filters.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Page of matching restaurants", content = @Content(schema = @Schema(implementation = RestaurantSearchResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid search parameter", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
@@ -48,13 +48,16 @@ public class RestaurantController {
             @Parameter(description = "Minimum average rating, from 0 to 5; unrated restaurants are excluded", example = "4.0") @RequestParam(required = false) Double minRating,
             @Parameter(description = "Maximum cost for two, nonnegative; requires currency", example = "1000") @RequestParam(required = false) Integer maxCostForTwo,
             @Parameter(description = "Case-insensitive exact currency; required with maxCostForTwo", example = "Indian Rupees(Rs.)") @RequestParam(required = false) String currency,
+            @Parameter(description = "Search center latitude, -90 to 90; requires longitude", example = "28.4595") @RequestParam(required = false) Double latitude,
+            @Parameter(description = "Search center longitude, -180 to 180; requires latitude", example = "77.0266") @RequestParam(required = false) Double longitude,
+            @Parameter(description = "Optional maximum distance in kilometers, inclusive and nonnegative; requires coordinates", example = "5") @RequestParam(required = false) Double radiusKm,
             @Parameter(description = "Zero-based page number", example = "0") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size from 1 to 100", example = "20") @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "Sort field: name, city, rating, or cost", example = "rating") @RequestParam(defaultValue = "name") String sortBy,
+            @Parameter(description = "Sort field: name, city, rating, cost, or distance (requires coordinates). Defaults to distance for nearby searches, name otherwise", example = "distance") @RequestParam(required = false) String sortBy,
             @Parameter(description = "Sort direction: asc or desc", example = "desc") @RequestParam(defaultValue = "asc") String sortDir
     ) {
         return searchService.search(new RestaurantSearchCriteria(name, city, cuisine, minRating,
-                maxCostForTwo, currency, page, size, sortBy, sortDir));
+                maxCostForTwo, currency, page, size, sortBy, sortDir, latitude, longitude, radiusKm));
     }
 
     @PostMapping
