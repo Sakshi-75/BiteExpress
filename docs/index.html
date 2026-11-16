@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>BiteExpress — Architecture &amp; Proof of Value</title>
+  <style>
+    :root{--ink:#15283a;--muted:#526577;--paper:#f4f7f6;--card:#fff;--line:#d8e2e1;--teal:#007f70;--teal-dark:#006357;--teal-soft:#e7f4f0;--amber:#a46100;--amber-soft:#fff2dc;--blue:#3366a4;--blue-soft:#eaf1fb;--shadow:0 16px 40px rgba(17,44,58,.08)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}a{color:var(--teal-dark);text-underline-offset:3px}a:hover{color:#004a40}button{font:inherit}svg{max-width:100%;height:auto}code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{font-size:.92em}pre{margin:0;overflow:auto;background:#142a39;color:#ecf8f4;border-radius:12px;padding:1.3rem;font-size:.9rem;line-height:1.5}.skip{position:absolute;left:-999px;top:0;background:#fff;padding:.8rem;z-index:20}.skip:focus{left:1rem}
+    .topbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}.top-inner{max-width:1280px;margin:auto;padding:.65rem 2rem;display:flex;align-items:center;gap:2rem}.brand{display:flex;align-items:center;gap:.65rem;font-weight:800;letter-spacing:-.03em;white-space:nowrap;color:var(--ink);text-decoration:none}.brand-mark{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--teal);color:#fff;font-size:1.05rem}.nav{display:flex;gap:.15rem;overflow-x:auto;scrollbar-width:none;flex:1}.nav::-webkit-scrollbar{display:none}.nav a{padding:.52rem .72rem;color:var(--muted);text-decoration:none;border-radius:8px;white-space:nowrap;font-size:.86rem;font-weight:650}.nav a:hover,.nav a.active{background:var(--teal-soft);color:var(--teal-dark)}.top-action{border:1px solid var(--line);padding:.43rem .7rem;border-radius:8px;white-space:nowrap;text-decoration:none;font-size:.82rem;font-weight:700}
+    main{max-width:1280px;margin:auto;padding:0 2rem 5rem}.hero{position:relative;overflow:hidden;background:linear-gradient(128deg,#102a3c 0%,#123a49 61%,#14584e 100%);color:#fff;border-radius:0 0 24px 24px;padding:4.4rem 4rem 3.8rem}.hero:after{content:"";position:absolute;width:390px;height:390px;border:1px solid rgba(255,255,255,.16);border-radius:50%;right:-85px;top:-175px;box-shadow:0 0 0 48px rgba(255,255,255,.035),0 0 0 105px rgba(255,255,255,.025)}.eyebrow{font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:#a9e5d4}.hero h1{font-size:clamp(2.5rem,5.2vw,4.7rem);line-height:1.04;letter-spacing:-.055em;max-width:780px;margin:.55rem 0 1rem}.hero p{font-size:1.12rem;max-width:720px;color:#d2e5e3;margin:0}.hero-actions{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:2rem}.button{display:inline-flex;align-items:center;justify-content:center;padding:.72rem 1rem;border-radius:9px;text-decoration:none;font-size:.9rem;font-weight:750}.button.primary{background:#b9eadb;color:#103d38}.button.secondary{border:1px solid rgba(255,255,255,.42);color:#fff}.button:hover{filter:brightness(.95)}.hero-meta{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:2rem}.hero-meta span{border:1px solid rgba(255,255,255,.24);border-radius:100px;padding:.35rem .7rem;color:#e6f5f1;font-size:.8rem}
+    section{scroll-margin-top:80px;margin-top:4.2rem}.section-head{display:flex;align-items:end;justify-content:space-between;gap:1rem;margin-bottom:1.35rem}.kicker{font-size:.77rem;letter-spacing:.15em;text-transform:uppercase;font-weight:800;color:var(--teal)}h2{font-size:clamp(1.8rem,3vw,2.6rem);letter-spacing:-.045em;line-height:1.16;margin:.2rem 0}h3{font-size:1.16rem;line-height:1.25;letter-spacing:-.018em;margin:0 0 .55rem}p{margin:.2rem 0 .9rem}.lede{color:var(--muted);max-width:720px}.grid{display:grid;gap:1rem}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1.45rem;box-shadow:var(--shadow)}.card p:last-child{margin-bottom:0}.card.soft{background:var(--teal-soft);border-color:#cde8dd;box-shadow:none}.card.proposed{background:var(--amber-soft);border-color:#f0d8b2;box-shadow:none}.card small{color:var(--muted)}.tag{display:inline-flex;align-items:center;gap:.35rem;border-radius:100px;padding:.25rem .6rem;font-size:.72rem;letter-spacing:.03em;text-transform:uppercase;font-weight:800}.tag.actual{background:var(--teal-soft);color:var(--teal-dark)}.tag.measured{background:var(--blue-soft);color:var(--blue)}.tag.proposal{background:var(--amber-soft);color:var(--amber)}.tag.assumption{background:#eceff2;color:#596876}.metric-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem;margin-top:-1.6rem;position:relative;z-index:1}.metric{background:#fff;border:1px solid var(--line);border-radius:14px;padding:1.15rem 1.3rem;box-shadow:var(--shadow)}.metric strong{display:block;font-size:1.85rem;line-height:1.1;letter-spacing:-.045em}.metric span{display:block;color:var(--muted);font-size:.82rem;margin-top:.4rem}
+    .tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem}.tab{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:9px;padding:.57rem .9rem;cursor:pointer;font-size:.9rem;font-weight:750}.tab:hover{border-color:var(--teal)}.tab[aria-selected="true"]{background:var(--teal);border-color:var(--teal);color:#fff}.diagram-panel{background:#fff;border:1px solid var(--line);border-radius:18px;padding:1.6rem;box-shadow:var(--shadow)}.diagram-panel[hidden]{display:none}.diagram-caption{margin:.7rem 0 0;color:var(--muted);font-size:.9rem}.diagram-svg{display:block;width:100%;max-height:330px;background:#f7fbfa;border:1px solid #e4ecea;border-radius:12px}.diagram-svg .box{fill:#fff;stroke:#a9c8c0;stroke-width:2}.diagram-svg .box-active{fill:#e7f4f0;stroke:#2f9c85;stroke-width:2}.diagram-svg .box-proposed{fill:#fff2dc;stroke:#d19436;stroke-width:2}.diagram-svg .line{stroke:#5d8d86;stroke-width:2.5;fill:none;marker-end:url(#arrow)}.diagram-svg .line-proposed{stroke:#bb8c4c;stroke-width:2.5;fill:none;marker-end:url(#arrow-amber)}.diagram-svg text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;fill:#173447;font-size:16px;font-weight:700}.diagram-svg text.sub{fill:#607484;font-size:12px;font-weight:500}.diagram-svg text.title{fill:#35665f;font-size:13px;font-weight:800;letter-spacing:1.5px}.diagram-svg text.title-proposed{fill:#9c621b}
+    .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow)}table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:.78rem .95rem;border-bottom:1px solid #e7eeec;vertical-align:top}th{background:#edf4f1;color:#35564f;font-size:.76rem;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}tr:last-child td{border-bottom:0}tbody tr:hover{background:#fbfdfc}.num{text-align:right;font-variant-numeric:tabular-nums}.table-note{font-size:.83rem;color:var(--muted);margin-top:.65rem}.flow-list{list-style:none;padding:0;margin:0;display:grid;gap:.75rem}.flow-list li{display:flex;align-items:start;gap:.8rem}.flow-list b{flex:0 0 1.6rem;display:grid;place-items:center;background:#d9efe7;color:var(--teal-dark);border-radius:6px;font-size:.8rem;height:1.6rem}.code-title{color:var(--muted);font-size:.83rem;font-weight:750;margin-bottom:.55rem}.callout{border-left:4px solid var(--teal);padding:1rem 1.15rem;background:#ebf5f2;border-radius:0 11px 11px 0;color:#2e5550}.callout.warning{border-color:#d39d42;background:#fff5e7;color:#6e4d19}.bar-grid{display:grid;gap:.8rem}.bar-row{display:grid;grid-template-columns:74px 1fr 88px;align-items:center;gap:.7rem;font-size:.85rem;font-weight:700}.bar-track{background:#e6efed;border-radius:100px;height:12px;overflow:hidden}.bar-fill{display:block;height:100%;background:linear-gradient(90deg,#1f9c8a,#6dcbb0);border-radius:100px}.bar-row:last-child .bar-fill{background:linear-gradient(90deg,#c6812b,#dfb06a)}.roadmap{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.roadmap .card{border-top:4px solid var(--teal)}.roadmap .card:nth-child(2){border-top-color:#d79a41}.roadmap ul,.card ul{padding-left:1.2rem;margin:.45rem 0 0}.roadmap li,.card li{margin:.35rem 0}.decision-table td:first-child{font-weight:750;min-width:140px}.footer{border-top:1px solid var(--line);margin-top:4rem;padding-top:1.4rem;display:flex;justify-content:space-between;gap:1rem;color:var(--muted);font-size:.8rem}[hidden]{display:none!important}
+    @media(max-width:900px){.top-inner{padding:.55rem 1rem;gap:.8rem}.top-action{display:none}main{padding:0 1rem 3rem}.hero{padding:3rem 2rem}.grid.three{grid-template-columns:1fr 1fr}.metric-row{grid-template-columns:repeat(2,minmax(0,1fr))}.roadmap{grid-template-columns:1fr}}
+    @media(max-width:620px){body{font-size:15px}.brand{font-size:.9rem}.nav a{font-size:.78rem;padding:.45rem .5rem}.hero{padding:2.7rem 1.4rem 3.3rem}.hero p{font-size:1rem}.metric-row{margin-top:-1.9rem}.metric{padding:.85rem}.metric strong{font-size:1.45rem}.grid.two,.grid.three{grid-template-columns:1fr}.diagram-panel{padding:.8rem}.diagram-svg{min-width:580px}.diagram-scroll{overflow-x:auto}.section-head{display:block}.bar-row{grid-template-columns:60px 1fr 72px}.footer{display:block}}
+    main,.card,.metric,.diagram-panel,.table-wrap,.nav{min-width:0}pre{max-width:100%}
+    @media(max-width:620px){.grid.two,.grid.three,.roadmap{grid-template-columns:minmax(0,1fr)}}
+    @media print{html{scroll-behavior:auto}body{background:#fff;color:#000;font-size:11pt}.topbar,.hero-actions,.tabs{display:none!important}main{max-width:none;padding:0}.hero{background:#fff;color:#000;padding:1rem 0 2rem;border-radius:0}.hero p,.hero-meta span{color:#333}.hero:after{display:none}.metric-row{margin:0}.card,.metric,.diagram-panel,.table-wrap{box-shadow:none;break-inside:avoid}.diagram-panel[hidden]{display:block!important}.diagram-panel{margin-bottom:1rem}section{margin-top:2rem;break-before:auto}.diagram-svg{max-height:260px}.grid,.roadmap{gap:.6rem}a{color:#000}}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to report</a>
+  <header class="topbar">
+    <div class="top-inner">
+      <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true">B</span>BiteExpress</a>
+      <nav class="nav" aria-label="Report sections">
+        <a href="#overview">Overview</a><a href="#architecture">Architecture</a><a href="#model">Data model</a><a href="#api">API</a><a href="#evidence">Evidence</a><a href="#decisions">Decisions</a><a href="#roadmap">Roadmap</a>
+      </nav>
+      <a class="top-action" href="../README.md">Repository README ↗</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="hero" id="top">
+      <span class="eyebrow">MongoDB FDE assessment · Architecture &amp; proof of value</span>
+      <h1>Restaurant discovery, grounded in working software.</h1>
+      <p>A source-verified view of the BiteExpress MVP, measured search behavior, and a clearly labeled path from a local demonstration to a resilient production design.</p>
+      <div class="hero-actions"><a class="button primary" href="#architecture">Explore architecture ↓</a><a class="button secondary" href="performance.md">See benchmark method ↗</a></div>
+      <div class="hero-meta"><span>Java 21 · Spring Boot 4.1.2</span><span>MongoDB 8</span><span>Offline report</span><span>November 2026</span></div>
+    </div>
+
+    <div class="metric-row" aria-label="Observed MVP facts">
+      <div class="metric"><strong>4</strong><span>Implemented restaurant endpoints</span></div>
+      <div class="metric"><strong>9,554</strong><span>Documents in measured local collection</span></div>
+      <div class="metric"><strong>2</strong><span>Observed indexes, including 2dsphere</span></div>
+      <div class="metric"><strong>0%</strong><span>API errors in short k6 benchmark runs</span></div>
+    </div>
+
+    <section id="overview" aria-labelledby="overview-title">
+      <div class="section-head"><div><span class="kicker">01 / Executive view</span><h2 id="overview-title">Why this MVP exists</h2></div><span class="tag actual">Implemented core</span></div>
+      <p class="lede">BiteExpress turns restaurant records into an API that can create, retrieve, filter, and find nearby restaurants. The assessment describes a legacy monolith as the starting point; this repository implements a focused MongoDB-backed discovery MVP, not a migration of that system.</p>
+      <div class="grid three">
+        <article class="card"><span class="tag assumption">Business framing</span><h3 style="margin-top:.8rem">Discovery problem</h3><p>Users need useful restaurant results by location, cuisine, rating, and budget. Historic source data has inconsistent or missing values, so ingestion and search behavior must be explicit.</p></article>
+        <article class="card soft"><span class="tag actual">6–12 months · goal</span><h3 style="margin-top:.8rem">Reliable local-to-team service</h3><p>Keep ingestion repeatable, validate API inputs, measure search latency, and establish operational visibility before scaling traffic or adding more query types.</p></article>
+        <article class="card proposed"><span class="tag proposal">2–3 years · option</span><h3 style="margin-top:.8rem">Modern discovery platform</h3><p>Evaluate managed replication, security controls, regional placement, and richer search only when traffic, reliability targets, and product needs justify them.</p></article>
+      </div>
+    </section>
+
+    <section id="architecture" aria-labelledby="architecture-title">
+      <div class="section-head"><div><span class="kicker">02 / Architecture</span><h2 id="architecture-title">Four views of the system</h2><p class="lede">Select a view. Each diagram labels observed components separately from conceptual or proposed ones.</p></div></div>
+      <div class="tabs" role="tablist" aria-label="Architecture diagrams">
+        <button class="tab" role="tab" id="tab-legacy" aria-controls="panel-legacy" aria-selected="false" tabindex="-1">Legacy concept</button>
+        <button class="tab" role="tab" id="tab-mvp" aria-controls="panel-mvp" aria-selected="true" tabindex="0">Actual MVP</button>
+        <button class="tab" role="tab" id="tab-flow" aria-controls="panel-flow" aria-selected="false" tabindex="-1">Query flow</button>
+        <button class="tab" role="tab" id="tab-future" aria-controls="panel-future" aria-selected="false" tabindex="-1">Future option</button>
+      </div>
+      <div class="diagram-panel" id="panel-legacy" role="tabpanel" aria-labelledby="tab-legacy" hidden>
+        <span class="tag assumption">Assessment concept · not inspected</span>
+        <div class="diagram-scroll"><svg class="diagram-svg" viewBox="0 0 900 280" role="img" aria-label="Conceptual legacy monolith: clients connect to one application with catalog, search, and import, backed by one data store">
+          <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#5d8d86"/></marker></defs>
+          <text class="title" x="40" y="39">CONCEPTUAL / ASSESSMENT FRAMING</text><rect class="box" x="48" y="91" rx="13" width="174" height="106"/><text x="92" y="136">Clients</text><text class="sub" x="78" y="159">Discovery requests</text><path class="line" d="M224 144 H328"/><rect class="box" x="334" y="65" rx="13" width="260" height="159"/><text x="390" y="107">Legacy monolith</text><text class="sub" x="383" y="135">Catalog · search · ingestion</text><text class="sub" x="399" y="160">One deployment boundary</text><path class="line" d="M595 144 H690"/><rect class="box" x="696" y="91" rx="13" width="160" height="106"/><text x="719" y="136">Data store</text><text class="sub" x="711" y="159">Technology unspecified</text>
+        </svg></div><p class="diagram-caption">The repository contains no legacy code, schema, traffic profile, or deployment evidence. This diagram illustrates the assessment's monolith premise only.</p>
+      </div>
+      <div class="diagram-panel" id="panel-mvp" role="tabpanel" aria-labelledby="tab-mvp">
+        <span class="tag actual">Implemented · local Compose topology</span>
+        <div class="diagram-scroll"><svg class="diagram-svg" viewBox="0 0 900 300" role="img" aria-label="Actual MVP: HTTP clients connect to Spring Boot API; repository and MongoTemplate access MongoDB 8; explicit CSV importer reads mounted data">
+          <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#5d8d86"/></marker></defs>
+          <text class="title" x="36" y="37">ACTUAL / RUNNING MVP</text><rect class="box" x="33" y="89" rx="13" width="155" height="94"/><text x="65" y="131">HTTP clients</text><text class="sub" x="57" y="154">Swagger / curl / UI</text><path class="line" d="M190 136 H277"/><rect class="box-active" x="282" y="73" rx="13" width="278" height="124"/><text x="337" y="111">Spring Boot API</text><text class="sub" x="311" y="137">Controllers → services → DTOs</text><text class="sub" x="310" y="159">Repository / MongoTemplate</text><path class="line" d="M561 136 H659"/><rect class="box-active" x="664" y="73" rx="13" width="197" height="124"/><text x="705" y="111">MongoDB 8</text><text class="sub" x="680" y="137">restaurants collection</text><text class="sub" x="679" y="159">_id_ · location_2dsphere</text><rect class="box" x="285" y="225" rx="11" width="274" height="51"/><text class="sub" x="303" y="255">Explicit CSV importer · mounted data/</text><path class="line" d="M561 249 H690 V199"/><text class="sub" x="597" y="278">Disabled on ordinary startup</text>
+        </svg></div><p class="diagram-caption">Docker Compose runs one app container and one MongoDB container. A named volume persists MongoDB data; the local <code>data/</code> directory is mounted read-only into the app.</p>
+      </div>
+      <div class="diagram-panel" id="panel-flow" role="tabpanel" aria-labelledby="tab-flow" hidden>
+        <span class="tag actual">Implemented · GET search path</span>
+        <div class="diagram-scroll"><svg class="diagram-svg" viewBox="0 0 900 296" role="img" aria-label="Actual search flow: structured parameters or rule-based parser produce validated criteria, MongoDB performs ordinary count/page or geoNear count/page, then response mapping">
+          <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#5d8d86"/></marker></defs>
+          <text class="title" x="36" y="39">ACTUAL / SEARCH REQUEST</text><rect class="box" x="31" y="68" rx="11" width="193" height="66"/><text x="43" y="96" style="font-size:14px">GET /v1/restaurants</text><text class="sub" x="53" y="116">Structured parameters</text><rect class="box" x="31" y="162" rx="11" width="193" height="66"/><text x="39" y="190" style="font-size:13px">GET /v1/restaurants/search</text><text class="sub" x="54" y="211">Rule-based parser</text><path class="line" d="M225 101 H308 V146 H340"/><path class="line" d="M225 195 H308 V149 H340"/><rect class="box-active" x="345" y="112" rx="11" width="204" height="77"/><text x="365" y="141">Search criteria</text><text class="sub" x="364" y="162">Validate · explicit overrides</text><path class="line" d="M550 150 H616"/><rect class="box-active" x="622" y="75" rx="11" width="239" height="148"/><text x="660" y="107">MongoTemplate</text><text class="sub" x="643" y="134">No coordinates → count + find</text><text class="sub" x="645" y="157">Coordinates → $geoNear first</text><text class="sub" x="642" y="180">Then filter, count, sort, page</text><path class="line" d="M738 226 V258 H549"/><rect class="box" x="344" y="239" rx="11" width="202" height="42"/><text class="sub" x="361" y="265">Paginated response DTO</text>
+        </svg></div><p class="diagram-caption">Natural language is a deterministic parser, not an LLM. Explicit query parameters override supported inferred fields. Validated errors return <code>ProblemDetail</code>; missing-location records remain in ordinary searches and are excluded by <code>$geoNear</code>.</p>
+      </div>
+      <div class="diagram-panel" id="panel-future" role="tabpanel" aria-labelledby="tab-future" hidden>
+        <span class="tag proposal">Proposed · no deployment claim</span>
+        <div class="diagram-scroll"><svg class="diagram-svg" viewBox="0 0 900 298" role="img" aria-label="Proposed future architecture: clients through API ingress to scalable application instances, managed MongoDB replica set and optional search, with observability and security controls">
+          <defs><marker id="arrow-amber" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#bb8c4c"/></marker></defs>
+          <text class="title title-proposed" x="36" y="39">PROPOSED / DEPENDS ON REQUIREMENTS</text><rect class="box-proposed" x="32" y="92" rx="12" width="146" height="94"/><text x="68" y="133">Clients</text><text class="sub" x="52" y="155">Regional access</text><path class="line-proposed" d="M179 139 H247"/><rect class="box-proposed" x="253" y="92" rx="12" width="166" height="94"/><text x="276" y="133">API ingress</text><text class="sub" x="281" y="155">Auth · routing</text><path class="line-proposed" d="M420 139 H487"/><rect class="box-proposed" x="492" y="75" rx="12" width="166" height="128"/><text x="509" y="114">App instances</text><text class="sub" x="514" y="139">Stateless scaling</text><text class="sub" x="520" y="163">Versioned API</text><path class="line-proposed" d="M660 139 H724"/><rect class="box-proposed" x="728" y="75" rx="12" width="143" height="128"/><text x="746" y="113">MongoDB</text><text class="sub" x="745" y="138">Replica set / Atlas</text><text class="sub" x="741" y="163">Search if needed</text><rect class="box" x="253" y="230" rx="10" width="405" height="44"/><text class="sub" x="276" y="257">Observability · backups · security · residency controls</text>
+        </svg></div><p class="diagram-caption">Replication, Atlas, dedicated search, and multi-region deployment are options for a later decision. They are not implemented or performance-tested in this repository.</p>
+      </div>
+    </section>
+
+    <section id="model" aria-labelledby="model-title">
+      <div class="section-head"><div><span class="kicker">03 / Data model</span><h2 id="model-title">One restaurant, one document</h2><p class="lede">The persisted model follows the restaurant read shape. Related values are embedded; cuisines remain an array; valid coordinates are GeoJSON.</p></div><span class="tag actual">Implemented</span></div>
+      <div class="grid two">
+        <article class="card"><div class="code-title">Illustrative shape · values abbreviated</div><pre aria-label="Restaurant MongoDB document shape">{
+  "_id": "UUID string",
+  "name": "Restaurant name",
+  "address": { "line1": "...", "city": "...",
+               "locality": "...", "localityVerbose": "..." },
+  "country": { "code": 1, "name": "India" },
+  "location": { "type": "Point",
+                "coordinates": [77.0639, 28.4674] },
+  "cuisines": ["North Indian", "Mughlai"],
+  "pricing": { "averageCostForTwo": 1500,
+               "currency": "Indian Rupees(Rs.)", "priceRange": 3 },
+  "rating": { "average": 3.8, "color": "Yellow",
+              "text": "Good", "votes": 72 },
+  "features": { "hasTableBooking": true,
+                "hasOnlineDelivery": false,
+                "isDeliveringNow": false,
+                "switchToOrderMenu": false }
+}</pre></article>
+        <div class="grid">
+          <article class="card"><h3>Embedding rationale</h3><p>Address, country, price, rating, and operational features are read with their restaurant, so they live together. The small country-code mapping enriches imports and does not create a separate MongoDB collection.</p></article>
+          <article class="card"><h3>IDs and missing values</h3><p>API creation uses random UUID strings; CSV import derives deterministic UUID strings from source IDs for repeat imports. Optional fields can be null; unavailable or invalid coordinates produce no location.</p></article>
+          <article class="card"><h3>GeoJSON &amp; indexes</h3><p>Coordinates are stored <strong>[longitude, latitude]</strong>. The observed indexes are MongoDB's default <code>_id_</code> and <code>location_2dsphere</code>; the latter supports <code>$geoNear</code>. No other index is claimed.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="api" aria-labelledby="api-title">
+      <div class="section-head"><div><span class="kicker">04 / API surface</span><h2 id="api-title">Four implemented endpoints</h2><p class="lede">Spring MVC controllers expose HTTP DTOs; services map them to immutable restaurant records and query MongoDB.</p></div><a href="http://localhost:8080/swagger-ui/index.html">Open Swagger UI ↗</a></div>
+      <div class="table-wrap"><table><thead><tr><th>Endpoint</th><th>Behavior</th><th>Success</th><th>Expected errors</th></tr></thead><tbody>
+        <tr><td><code>POST /v1/restaurants</code></td><td>Validate request, create a random UUID, persist and return the complete restaurant. No Location header.</td><td>201</td><td>400 validation or malformed JSON</td></tr>
+        <tr><td><code>GET /v1/restaurants/{id}</code></td><td>Retrieve one stored restaurant by exact ID, including imported records.</td><td>200</td><td>404 missing ID</td></tr>
+        <tr><td><code>GET /v1/restaurants</code></td><td>AND-combined name, city, cuisine, rating, currency-aware cost, and optional nearby filters; sort and page in MongoDB.</td><td>200</td><td>400 invalid filter</td></tr>
+        <tr><td><code>GET /v1/restaurants/search?q=…</code></td><td>Parse supported city, cuisine, ranking, proximity, and INR-budget phrases into the same search criteria. Explicit parameters win.</td><td>200</td><td>400 unsupported search or invalid filter</td></tr>
+      </tbody></table></div>
+      <div class="grid two" style="margin-top:1rem">
+        <article class="card"><h3>Search contract</h3><p>Pages are zero-based with size 1–100. Listing summaries expose address, city, country, cuisines, average rating, optional location, and <code>distanceKm</code> for nearby results. Distance sorting requires latitude and longitude. Cost filtering requires currency.</p></article>
+        <article class="card"><h3>Validation &amp; errors</h3><p><code>@Valid</code> checks the POST body; search criteria validate filter ranges and combinations. Central <code>@RestControllerAdvice</code> returns <code>ProblemDetail</code> codes: <code>VALIDATION_FAILED</code>, <code>INVALID_REQUEST</code>, <code>INVALID_FILTER</code>, <code>UNSUPPORTED_SEARCH</code>, and <code>RESTAURANT_NOT_FOUND</code>.</p></article>
+      </div>
+    </section>
+
+    <section id="evidence" aria-labelledby="evidence-title">
+      <div class="section-head"><div><span class="kicker">05 / Performance &amp; proof of value</span><h2 id="evidence-title">What the measurements show</h2><p class="lede">Only the documented benchmark runs are shown here. These are local, short-duration observations, not production service-level objectives.</p></div><span class="tag measured">Measured</span></div>
+      <div class="grid two">
+        <article class="card"><h3>Mixed search workload · 10 seconds</h3><div class="bar-grid" aria-label="p95 response time by concurrency"><div class="bar-row"><span>1 VU</span><span class="bar-track"><span class="bar-fill" style="width:4.9%"></span></span><span class="num">22.59 ms</span></div><div class="bar-row"><span>10 VUs</span><span class="bar-track"><span class="bar-fill" style="width:33.9%"></span></span><span class="num">156.30 ms</span></div><div class="bar-row"><span>25 VUs</span><span class="bar-track"><span class="bar-fill" style="width:100%"></span></span><span class="num">461.53 ms</span></div></div><p class="table-note">Bars show p95 relative to the highest measured p95. No target threshold was defined.</p></article>
+        <article class="card"><h3>Test environment</h3><p>Windows 11 + Docker Desktop; rebuilt Java 21 app; MongoDB 8.0.38; k6 2.4.0 in a separate container. The local collection held 9,554 restaurants. Workloads were sequential, read-only GET requests with no deliberate think time.</p><p class="table-note">All measured requests passed status and response-shape checks; reported API error rate was 0% in these runs.</p></article>
+      </div>
+      <div class="table-wrap" style="margin-top:1rem"><table><thead><tr><th>Mixed workload</th><th class="num">Requests</th><th class="num">Requests/s</th><th class="num">p50</th><th class="num">p95</th><th class="num">p99</th><th class="num">Errors</th></tr></thead><tbody>
+        <tr><td>1 virtual user</td><td class="num">603</td><td class="num">60.26</td><td class="num">15.98 ms</td><td class="num">22.59 ms</td><td class="num">34.98 ms</td><td class="num">0%</td></tr>
+        <tr><td>10 virtual users</td><td class="num">1,440</td><td class="num">143.30</td><td class="num">58.82 ms</td><td class="num">156.30 ms</td><td class="num">167.66 ms</td><td class="num">0%</td></tr>
+        <tr><td>25 virtual users</td><td class="num">1,226</td><td class="num">118.61</td><td class="num">211.41 ms</td><td class="num">461.53 ms</td><td class="num">501.29 ms</td><td class="num">0%</td></tr>
+      </tbody></table></div>
+      <div class="grid two" style="margin-top:1rem">
+        <article class="card"><h3>Endpoint-specific p95 · 10 VUs, 5 seconds</h3><div class="table-wrap" style="box-shadow:none"><table><thead><tr><th>Workload</th><th class="num">p95</th><th class="num">Requests/s</th></tr></thead><tbody><tr><td>Listing</td><td class="num">61.71 ms</td><td class="num">174.64</td></tr><tr><td>Combined filters</td><td class="num">146.34 ms</td><td class="num">84.04</td></tr><tr><td>Geospatial</td><td class="num">42.14 ms</td><td class="num">263.29</td></tr><tr><td>Natural language</td><td class="num">198.41 ms</td><td class="num">58.55</td></tr></tbody></table></div></article>
+        <article class="card"><h3>Index proof</h3><p><code>explain("executionStats")</code> showed <code>GEO_NEAR_2DSPHERE → FETCH → IXSCAN</code> using <code>location_2dsphere</code>. Its geo cursor examined <strong>1,213 keys</strong> and <strong>980 documents</strong>; later filters reduced the nearby set to 215 matches.</p><p>Listing and representative combined/natural-language filters showed <code>COLLSCAN</code> of 9,554 documents. The default listing page also had a <code>SORT</code> stage.</p></article>
+      </div>
+      <div class="callout warning" style="margin-top:1rem"><strong>Interpretation:</strong> Throughput fell and p95 increased at 25 VUs on this local setup. The endpoints use different filters and result counts, so their timings are not an index A/B test. No application optimization or business impact was measured.</div>
+      <p class="table-note">Commands, full p50/p95/p99 tables, and query-plan details: <a href="performance.md">Performance report ↗</a>.</p>
+    </section>
+
+    <section id="decisions" aria-labelledby="decisions-title">
+      <div class="section-head"><div><span class="kicker">06 / Design decisions</span><h2 id="decisions-title">Why these choices fit</h2></div></div>
+      <div class="table-wrap"><table class="decision-table"><thead><tr><th>Choice</th><th>Reason in this MVP</th><th>Trade-off or alternative</th></tr></thead><tbody>
+        <tr><td>Embedded restaurant data</td><td>Most reads need address, country, pricing, rating, and features together.</td><td>A normalized multi-collection model could reduce duplication but would add joins/lookups to common reads.</td></tr>
+        <tr><td>GeoJSON Point + 2dsphere</td><td>Indexed <code>$geoNear</code> computes distances and nearby results in MongoDB.</td><td>Missing coordinates cannot participate; deterministic sorting adds work after distance calculation.</td></tr>
+        <tr><td>Explicit importer</td><td>Bounded batches, deterministic IDs, and disabled-by-default startup make demos repeatable.</td><td>Source anomalies remain visible; this is not a continuously synchronized ingestion pipeline.</td></tr>
+        <tr><td>Rule-based language parser</td><td>Supported requests translate into the existing validated search criteria.</td><td>Limited vocabulary; unsupported or dish-level requests return 400. LLM/vector search is absent.</td></tr>
+        <tr><td>Few indexes</td><td>The measured geo plan uses its index; the remaining 9,554-document scans are known.</td><td>Case-insensitive regex and exact counts limit ordinary B-tree benefits. New indexes need representative A/B evidence.</td></tr>
+      </tbody></table></div>
+      <p class="table-note">MongoDB fits the MVP's document-shaped reads and geospatial search. This is an architectural rationale, not a claim that it outperforms every alternative.</p>
+    </section>
+
+    <section id="roadmap" aria-labelledby="roadmap-title">
+      <div class="section-head"><div><span class="kicker">07 / Reliability &amp; scalability</span><h2 id="roadmap-title">A measured path forward</h2><p class="lede">Proposals are contingent on usage, reliability targets, security needs, and deployment context. None of these capabilities is claimed as implemented.</p></div><span class="tag proposal">Proposed</span></div>
+      <div class="roadmap">
+        <article class="card"><span class="tag proposal">Next 6–12 months</span><h3 style="margin-top:.8rem">Prove service reliability</h3><ul><li>Collect longer, representative p95/p99 and error-rate baselines with stable traffic and realistic data distribution.</li><li>Instrument slow queries and profile count, sort, and deep-page behavior; evaluate index or normalized-field changes in an isolated environment.</li><li>Define availability, backup, restore, and alerting requirements before choosing a production topology.</li><li>Review authentication, least-privilege database access, secrets, and import controls.</li></ul></article>
+        <article class="card"><span class="tag proposal">2–3 year options</span><h3 style="margin-top:.8rem">Scale only with evidence</h3><ul><li>Evaluate Atlas or a managed replica set for availability and operations, with tested backup and restore procedures.</li><li>Consider dedicated search capabilities when product requirements exceed literal structured and rule-based queries.</li><li>Scale stateless API instances, then revisit pagination and data access based on measured traffic.</li><li>Plan regional placement, data residency, encryption, auditability, and disaster recovery around actual obligations.</li></ul></article>
+      </div>
+    </section>
+
+    <section id="limits" aria-labelledby="limits-title">
+      <div class="section-head"><div><span class="kicker">08 / Evidence boundaries</span><h2 id="limits-title">What is known, and what is not</h2></div></div>
+      <div class="grid three">
+        <article class="card"><h3>Implemented &amp; tested</h3><p>Four endpoints, CSV import, validation, structured and geospatial MongoDB queries, a bounded natural-language parser, Swagger, and Testcontainers-backed API tests. The load and explain scripts are repeatable.</p></article>
+        <article class="card"><h3>Unmeasured or assumed</h3><p>The legacy system is conceptual. Production traffic, availability, recovery time, cost, and business impact were not measured. The short local benchmarks do not prove scaling behavior or a before/after improvement.</p></article>
+        <article class="card"><h3>Data boundary</h3><p>The checkout includes <code>data/zomato.csv</code> for full imports, plus a three-row synthetic fixture and <code>data/country-codes.csv</code> for country names. Kaggle labels the source dataset CC0: Public Domain.</p></article>
+      </div>
+    </section>
+
+    <footer class="footer"><span>BiteExpress · Architecture &amp; proof of value · Offline report</span><span><a href="../README.md">README</a> · <a href="performance.md">Performance evidence</a> · <a href="http://localhost:8080/swagger-ui/index.html">Swagger UI (requires running app)</a></span></footer>
+  </main>
+
+  <script>
+    (() => {
+      const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+      const panels = Array.from(document.querySelectorAll('[role="tabpanel"]'));
+      function select(tab, focus = false) {
+        tabs.forEach((item) => { const active = item === tab; item.setAttribute('aria-selected', String(active)); item.tabIndex = active ? 0 : -1; });
+        panels.forEach((panel) => { panel.hidden = panel.id !== tab.getAttribute('aria-controls'); });
+        if (focus) tab.focus();
+      }
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => select(tab));
+        tab.addEventListener('keydown', (event) => {
+          const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length : event.key === 'ArrowLeft' ? (index - 1 + tabs.length) % tabs.length : null;
+          if (next !== null) { event.preventDefault(); select(tabs[next], true); }
+        });
+      });
+      const navLinks = Array.from(document.querySelectorAll('.nav a'));
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+          const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+          if (visible) navLinks.forEach((link) => link.classList.toggle('active', link.hash === `#${visible.target.id}`));
+        }, { rootMargin: '-90px 0px -55% 0px', threshold: [0, .2, .5] });
+        document.querySelectorAll('main section[id]').forEach((section) => observer.observe(section));
+      }
+    })();
+  </script>
+</body>
+</html>

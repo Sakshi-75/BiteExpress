@@ -2,6 +2,8 @@
 
 BiteExpress is a Java 21 / Spring Boot 4.1.2 restaurant discovery API backed by MongoDB 8. It supports restaurant creation, CSV import, structured filters, distance search, and a small rule-based natural-language search. No LLM or vector service runs in the app.
 
+For the architecture and proof-of-value presentation, open [docs/index.html](docs/index.html) locally in a browser.
+
 ## Quick start
 
 Requires Docker Desktop with Compose. For an IDE run, use JDK 21 and Maven.
@@ -26,13 +28,13 @@ Import is disabled by default. The bundled [sample CSV](data/sample-restaurants.
 docker compose run --rm -e SPRING_MAIN_WEB_APPLICATION_TYPE=none -e BITEEXPRESS_IMPORT_ENABLED=true app
 ~~~
 
-The full dataset is **not bundled**. Download the [Zomato Restaurants Data dataset on Kaggle](https://www.kaggle.com/datasets/shrutimehta/zomato-restaurants-data), extract `zomato.csv`, and place it at `data/zomato.csv` beside the included country-code lookup. Then run:
+The full [Zomato Restaurants Data dataset](https://www.kaggle.com/datasets/shrutimehta/zomato-restaurants-data) is bundled at [data/zomato.csv](data/zomato.csv). Kaggle labels the dataset **CC0: Public Domain**. To import it, run:
 
 ~~~sh
 docker compose run --rm -e SPRING_MAIN_WEB_APPLICATION_TYPE=none -e BITEEXPRESS_IMPORT_ENABLED=true -e BITEEXPRESS_IMPORT_FILE=file:./data/zomato.csv app
 ~~~
 
-The Kaggle listing does not establish that the original Zomato data may be republished in this repository, so `data/zomato.csv` remains Git ignored. The small country-code lookup contains factual code/name pairs transcribed from the source mapping; the source Excel file is not bundled. `BITEEXPRESS_IMPORT_COUNTRY_FILE` overrides the lookup path if your copy uses different codes. For an IDE import, also set `SPRING_MAIN_WEB_APPLICATION_TYPE=none` and the local MongoDB URI above.
+The bundled country-code lookup contains the 15 code/name pairs transcribed from the source Excel mapping; the Excel file itself is not needed at runtime. The importer loads `data/country-codes.csv` once per run and embeds each resolved name alongside its numeric code. `BITEEXPRESS_IMPORT_COUNTRY_FILE` overrides the lookup path if your copy uses different codes. For an IDE import, also set `SPRING_MAIN_WEB_APPLICATION_TYPE=none` and the local MongoDB URI above.
 
 The importer streams rows in batches of 250. Stable UUIDs derived from source IDs make repeat imports idempotent; the last valid duplicate row wins. Missing names/IDs, unknown country codes, or malformed required values reject a row. Missing/unrated ratings stay null; invalid or (0, 0) coordinates become null without rejecting an otherwise valid row. Strings and cuisines are trimmed. Source currencies are preserved, including known country/currency anomalies.
 
