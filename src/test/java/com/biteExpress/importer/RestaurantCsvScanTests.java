@@ -73,6 +73,18 @@ class RestaurantCsvScanTests {
         assertTrue(summary.examples().get(1).contains("Country Code"));
     }
 
+    @Test
+    void acceptsAnyNonBlankSourceId() throws Exception {
+        String csv = sample().replace("100001,Spice Garden,", "api:reserved,Spice Garden,");
+        List<Restaurant> restaurants = new ArrayList<>();
+
+        var summary = new RestaurantCsvReader().scan(new StringReader(csv), countries, restaurants::add);
+
+        assertEquals(0, summary.rejectedRows());
+        assertEquals(3, summary.validRows());
+        assertEquals("api:reserved", restaurants.getFirst().id());
+    }
+
     private String sample() throws Exception {
         return Files.readString(Path.of("data/sample-restaurants.csv"));
     }

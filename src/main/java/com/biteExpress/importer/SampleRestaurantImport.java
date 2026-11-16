@@ -9,6 +9,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStreamReader;
@@ -17,6 +19,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 @ConditionalOnProperty(name = "biteexpress.import.enabled", havingValue = "true")
@@ -44,21 +47,41 @@ public class SampleRestaurantImport implements ApplicationRunner {
              var reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8)) {
             var countries = new CountryCsvReader().read(countryReader);
             List<Restaurant> batch = new ArrayList<>(BATCH_SIZE);
+            var counts = new ImportCounts();
             var summary = new RestaurantCsvReader().scan(reader, countries, restaurant -> {
                 batch.add(restaurant);
-                if (batch.size() == BATCH_SIZE) saveBatch(batch);
+                if (batch.size() == BATCH_SIZE) saveBatch(batch, counts);
             });
-            saveBatch(batch);
+            saveBatch(batch, counts);
             if (summary.validRows() == 0) throw new IllegalStateException("Import contained no valid restaurant rows: " + file.getDescription());
-            log.info("Restaurant import from {}: rows={}, valid={}, saved/upserted={}, rejected={}, unavailableLocations={}, duration={}ms, rejectionReasons={}, examples={}",
-                    file.getDescription(), summary.totalRows(), summary.validRows(), summary.validRows(),
+            log.info("Restaurant import from {}: rows={}, valid={}, saved/upserted={}, skippedLegacy={}, rejected={}, unavailableLocations={}, duration={}ms, rejectionReasons={}, examples={}",
+                    file.getDescription(), summary.totalRows(), summary.validRows(), counts.saved, counts.skippedLegacy,
                     summary.rejectedRows(), summary.unavailableLocations(), Duration.between(started, Instant.now()).toMillis(),
                     summary.reasons(), summary.examples());
         }
     }
 
-    private void saveBatch(List<Restaurant> batch) {
-        for (Restaurant restaurant : batch) mongoTemplate.save(restaurant);
+    static String idForSource(String sourceId) {
+        return UUID.nameUUIDFromBytes(("biteexpress:restaurant:" + sourceId).getBytes(StandardCharsets.UTF_8)).toString();
+    }
+
+    private void saveBatch(List<Restaurant> batch, ImportCounts counts) {
+        for (Restaurant restaurant : batch) {
+            String sourceId = restaurant.id();
+            if (mongoTemplate.exists(Query.query(Criteria.where("_id").is(sourceId)), Restaurant.class)) {
+                counts.skippedLegacy++;
+                continue;
+            }
+            mongoTemplate.save(new Restaurant(idForSource(sourceId), restaurant.name(), restaurant.address(),
+                    restaurant.country(), restaurant.location(), restaurant.cuisines(), restaurant.pricing(),
+                    restaurant.rating(), restaurant.features()));
+            counts.saved++;
+        }
         batch.clear();
+    }
+
+    private static final class ImportCounts {
+        long saved;
+        long skippedLegacy;
     }
 }

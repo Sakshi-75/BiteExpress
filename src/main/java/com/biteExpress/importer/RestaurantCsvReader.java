@@ -44,11 +44,12 @@ final class RestaurantCsvReader {
     }
 
     private Restaurant toRestaurant(CSVRecord row, Map<Integer, Country> countries) {
+        String id = required(row, "Restaurant ID");
         int code = positiveInt(row, "Country Code");
         Country country = countries.get(code);
         if (country == null) throw new IllegalArgumentException("Country Code " + code + " has no mapping");
         String ratingText = text(row, "Rating text");
-        return new Restaurant(required(row, "Restaurant ID"), required(row, "Restaurant Name"),
+        return new Restaurant(id, required(row, "Restaurant Name"),
                 new Address(nullableText(row, "Address"), nullableText(row, "City"), nullableText(row, "Locality"), nullableText(row, "Locality Verbose")),
                 country, location(row), cuisines(text(row, "Cuisines")),
                 new Pricing(optionalNonNegativeInt(row, "Average Cost for two"), nullableText(row, "Currency"), optionalRangedInt(row, "Price range", 1, 4)),

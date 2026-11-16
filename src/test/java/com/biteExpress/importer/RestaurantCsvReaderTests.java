@@ -22,7 +22,7 @@ class RestaurantCsvReaderTests {
         var summary = new RestaurantCsvReader().scan(new StringReader(sample()), countries, rows::add);
         assertEquals(3, summary.validRows());
         Restaurant first = rows.getFirst();
-        assertEquals("100001", first.id());
+        assertEquals("100001", first.id()); // The reader retains the source ID until persistence.
         assertEquals(1, first.country().code());
         assertEquals("India", first.country().name());
         assertEquals("12 Market Road, Connaught Place", first.address().line1());
