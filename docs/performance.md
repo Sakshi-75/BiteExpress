@@ -50,7 +50,7 @@ Windows 11, Docker Desktop, Java 21 app image rebuilt from the current source, M
 | geospatial | 10 | 5 s | 1,320 | 263.29 | 37.30 | 42.14 | 45.43 | 0% |
 | natural language | 10 | 5 s | 298 | 58.55 | 169.40 | 198.41 | 212.32 | 0% |
 
-All requests passed the response checks; both k6 error metrics were 0%. Workloads were run sequentially, with no deliberate think time. Results include network and application time. The 25-VU run had lower throughput and much higher latency than the 10-VU run, so this local setup was saturated by 25 concurrent clients.
+All requests passed the response checks; both k6 error metrics were 0%. Workloads were run sequentially, with no deliberate think time. Results include network and application time. The 25-VU run had lower throughput and much higher latency than the 10-VU run, suggesting saturation in this short local test; longer repeat runs are needed to establish a capacity limit.
 
 ## MongoDB plans
 

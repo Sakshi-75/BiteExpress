@@ -2,7 +2,7 @@
 
 BiteExpress is a Java 21 / Spring Boot 4.1.2 restaurant discovery API backed by MongoDB 8. It supports restaurant creation, CSV import, structured filters, distance search, and a small rule-based natural-language search. No LLM or vector service runs in the app.
 
-For the architecture and proof-of-value presentation, open [docs/index.html](docs/index.html) locally in a browser.
+Read the offline [architecture report](docs/index.html), [performance evidence](docs/performance.md), and [proposed migration plan](docs/migration/migration-plan.md) for details.
 
 ## Quick start
 
@@ -45,7 +45,7 @@ The importer streams rows in batches of 250. Stable UUIDs derived from source ID
 | POST /v1/restaurants | Create a restaurant; returns 201 and its full document, without a Location header. |
 | GET /v1/restaurants/{id} | Retrieve a restaurant; returns 200 or 404. |
 | GET /v1/restaurants | Structured listing with filters and pagination. |
-| GET /v1/restaurants/search?q=... | Parse supported phrases, then run the same MongoDB search. |
+| GET /v1/restaurants/search | Run structured filters; optionally parse supported phrases supplied in `q`. |
 
 Both listing endpoints accept name (partial), city, cuisine, minRating, maxCostForTwo with currency, latitude and longitude, radiusKm, page, size, sortBy, and sortDir. Filters combine with AND. Page is zero-based; size is 1–100. Sort fields are name, city, rating, cost, and distance. With coordinates, the default is nearest first; otherwise it is name ascending. Equal sort values use ID as a tiebreaker. Errors use HTTP 400 with `VALIDATION_FAILED` for POST fields, `INVALID_REQUEST` for malformed JSON, `INVALID_FILTER` for query parameters, or `UNSUPPORTED_SEARCH` for unsupported language; missing IDs return 404 with `RESTAURANT_NOT_FOUND`.
 
@@ -62,7 +62,7 @@ The listing response contains content, page, size, totalElements, and totalPages
 
 ## Design and verification
 
-One restaurants collection stores embedded address, country, pricing, rating, and features. API-created IDs are random UUID strings; imported IDs are deterministic UUID strings. Valid locations are GeoJSON Points in [longitude, latitude] order. The app creates the 2dsphere location index at startup and rechecks it on nearby requests; refresh the restaurants collection's Indexes tab in Compass to see it. Nearby searches use MongoDB $geoNear; filtering, counts, sorting, and pagination stay in MongoDB. There is no separate country collection or dish-level data.
+One restaurants collection stores embedded address, country, pricing, rating, and features. API-created IDs are random UUID strings; imported IDs are deterministic UUID strings. Valid locations are GeoJSON Points in [longitude, latitude] order. The app creates the 2dsphere location index at startup; refresh the restaurants collection's Indexes tab in Compass to see it. Nearby searches use MongoDB $geoNear; filtering, counts, sorting, and pagination stay in MongoDB. There is no separate country collection or dish-level data.
 
 ~~~sh
 ./mvnw test

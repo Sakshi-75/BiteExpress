@@ -37,7 +37,7 @@
       <span class="eyebrow">MongoDB FDE assessment · Architecture &amp; proof of value</span>
       <h1>Restaurant discovery, grounded in working software.</h1>
       <p>A source-verified view of the BiteExpress MVP, measured search behavior, and a clearly labeled path from a local demonstration to a resilient production design.</p>
-      <div class="hero-actions"><a class="button primary" href="#architecture">Explore architecture ↓</a><a class="button secondary" href="performance.md">See benchmark method ↗</a></div>
+      <div class="hero-actions"><a class="button primary" href="#architecture">Explore architecture ↓</a><a class="button secondary" href="performance.md">See benchmark method ↗</a><a class="button secondary" href="migration/migration-plan.md">Migration strategy ↗</a></div>
       <div class="hero-meta"><span>Java 21 · Spring Boot 4.1.2</span><span>MongoDB 8</span><span>Offline report</span><span>November 2026</span></div>
     </div>
 
@@ -68,9 +68,9 @@
       </div>
       <div class="diagram-panel" id="panel-legacy" role="tabpanel" aria-labelledby="tab-legacy" hidden>
         <span class="tag assumption">Assessment concept · not inspected</span>
-        <div class="diagram-scroll"><svg class="diagram-svg" viewBox="0 0 900 280" role="img" aria-label="Conceptual legacy monolith: clients connect to one application with catalog, search, and import, backed by one data store">
+        <div class="diagram-scroll"><svg class="diagram-svg" viewBox="0 0 900 280" role="img" aria-label="Assessment-described legacy estate: clients connect to multiple on-premise monolith instances backed by relational databases">
           <defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#5d8d86"/></marker></defs>
-          <text class="title" x="40" y="39">CONCEPTUAL / ASSESSMENT FRAMING</text><rect class="box" x="48" y="91" rx="13" width="174" height="106"/><text x="92" y="136">Clients</text><text class="sub" x="78" y="159">Discovery requests</text><path class="line" d="M224 144 H328"/><rect class="box" x="334" y="65" rx="13" width="260" height="159"/><text x="390" y="107">Legacy monolith</text><text class="sub" x="383" y="135">Catalog · search · ingestion</text><text class="sub" x="399" y="160">One deployment boundary</text><path class="line" d="M595 144 H690"/><rect class="box" x="696" y="91" rx="13" width="160" height="106"/><text x="719" y="136">Data store</text><text class="sub" x="711" y="159">Technology unspecified</text>
+          <text class="title" x="40" y="39">CONCEPTUAL / ASSESSMENT FRAMING</text><rect class="box" x="48" y="91" rx="13" width="174" height="106"/><text x="92" y="136">Clients</text><text class="sub" x="78" y="159">Discovery requests</text><path class="line" d="M224 144 H328"/><rect class="box" x="334" y="65" rx="13" width="260" height="159"/><text x="390" y="107">Legacy monolith</text><text class="sub" x="383" y="135">Catalog · search · ingestion</text><text class="sub" x="398" y="160">Multiple on-prem instances</text><path class="line" d="M595 144 H690"/><rect class="box" x="696" y="91" rx="13" width="160" height="106"/><text x="719" y="136">Data store</text><text class="sub" x="711" y="159">Relational databases</text>
         </svg></div><p class="diagram-caption">The repository contains no legacy code, schema, traffic profile, or deployment evidence. This diagram illustrates the assessment's monolith premise only.</p>
       </div>
       <div class="diagram-panel" id="panel-mvp" role="tabpanel" aria-labelledby="tab-mvp">
@@ -131,7 +131,7 @@
         <tr><td><code>POST /v1/restaurants</code></td><td>Validate request, create a random UUID, persist and return the complete restaurant. No Location header.</td><td>201</td><td>400 validation or malformed JSON</td></tr>
         <tr><td><code>GET /v1/restaurants/{id}</code></td><td>Retrieve one stored restaurant by exact ID, including imported records.</td><td>200</td><td>404 missing ID</td></tr>
         <tr><td><code>GET /v1/restaurants</code></td><td>AND-combined name, city, cuisine, rating, currency-aware cost, and optional nearby filters; sort and page in MongoDB.</td><td>200</td><td>400 invalid filter</td></tr>
-        <tr><td><code>GET /v1/restaurants/search?q=…</code></td><td>Parse supported city, cuisine, ranking, proximity, and INR-budget phrases into the same search criteria. Explicit parameters win.</td><td>200</td><td>400 unsupported search or invalid filter</td></tr>
+        <tr><td><code>GET /v1/restaurants/search</code></td><td>Use structured filters directly, or parse supported city, cuisine, ranking, proximity, and INR-budget phrases when <code>q</code> is supplied. Explicit parameters win.</td><td>200</td><td>400 unsupported search or invalid filter</td></tr>
       </tbody></table></div>
       <div class="grid two" style="margin-top:1rem">
         <article class="card"><h3>Search contract</h3><p>Pages are zero-based with size 1–100. Listing summaries expose address, city, country, cuisines, average rating, optional location, and <code>distanceKm</code> for nearby results. Distance sorting requires latitude and longitude. Cost filtering requires currency.</p></article>
@@ -187,7 +187,7 @@
       </div>
     </section>
 
-    <footer class="footer"><span>BiteExpress · Architecture &amp; proof of value · Offline report</span><span><a href="../README.md">README</a> · <a href="performance.md">Performance evidence</a> · <a href="http://localhost:8080/swagger-ui/index.html">Swagger UI (requires running app)</a></span></footer>
+    <footer class="footer"><span>BiteExpress · Architecture &amp; proof of value · Offline report</span><span><a href="../README.md">README</a> · <a href="performance.md">Performance evidence</a> · <a href="migration/migration-plan.md">Migration plan</a> · <a href="http://localhost:8080/swagger-ui/index.html">Swagger UI (requires running app)</a></span></footer>
   </main>
 
   <script>

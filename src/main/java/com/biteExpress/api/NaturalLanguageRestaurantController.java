@@ -29,15 +29,15 @@ public class NaturalLanguageRestaurantController {
     }
 
     @GetMapping("/v1/restaurants/search")
-    @Operation(summary = "Search restaurants in natural language",
-            description = "Parses supported city, cuisine, best-rated, nearest, and rupee-budget phrases into the same MongoDB search used by GET /v1/restaurants. Explicit parameters override inferred values. Dish-level and ambiguous requests return 400.")
+    @Operation(summary = "Search restaurants with optional natural language",
+            description = "When q is supplied, parses supported city, cuisine, best-rated, nearest, and rupee-budget phrases into the same MongoDB search used by GET /v1/restaurants. Without q, searches using only explicit filters. Explicit parameters override inferred values. Dish-level and ambiguous requests return 400.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Page of matching restaurants", content = @Content(schema = @Schema(implementation = RestaurantSearchResponse.class))),
             @ApiResponse(responseCode = "400", description = "Unsupported natural-language request (UNSUPPORTED_SEARCH) or invalid explicit filter (INVALID_FILTER)", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class),
                     examples = @ExampleObject(value = "{\"status\":400,\"title\":\"Bad Request\",\"detail\":\"Dish and menu-item search is unavailable; search by cuisine\",\"code\":\"UNSUPPORTED_SEARCH\"}")))
     })
     public RestaurantSearchResponse search(
-            @Parameter(description = "Supported natural-language query. Examples: best North Indian restaurants in Gurugram under Rs 800 for two; nearest Chinese restaurants within 5 km",
+            @Parameter(description = "Optional natural-language query. Examples: best North Indian restaurants in Gurugram under Rs 800 for two; nearest Chinese restaurants within 5 km",
                     examples = {@ExampleObject(name = "Top rated", value = "best North Indian restaurants in Gurugram under Rs 800 for two"),
                             @ExampleObject(name = "Nearby", value = "nearest Chinese restaurants within 5 km")})
             @RequestParam(required = false) String q,
@@ -55,6 +55,10 @@ public class NaturalLanguageRestaurantController {
             @Parameter(description = "Sort by name, city, rating, cost, or distance; overrides q") @RequestParam(required = false) String sortBy,
             @Parameter(description = "Sort direction asc or desc; overrides q") @RequestParam(required = false) String sortDir
     ) {
+        if (q == null) {
+            return searchService.search(new RestaurantSearchCriteria(name, city, cuisine, minRating,
+                    maxCostForTwo, currency, page, size, sortBy, sortDir, latitude, longitude, radiusKm));
+        }
         var intent = parser.parse(q);
         if (intent.requiresCoordinates() && (latitude == null || longitude == null))
             throw new UnsupportedRestaurantSearchException("Nearest or radius search requires latitude and longitude");

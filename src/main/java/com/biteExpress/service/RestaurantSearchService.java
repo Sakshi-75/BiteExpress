@@ -22,11 +22,9 @@ public class RestaurantSearchService {
     private static final Map<String, String> SORT_FIELDS = Map.of(
             "name", "name", "city", "address.city", "rating", "rating.average", "cost", "pricing.averageCostForTwo");
     private final MongoTemplate mongoTemplate;
-    private final RestaurantLocationIndex locationIndex;
 
-    public RestaurantSearchService(MongoTemplate mongoTemplate, RestaurantLocationIndex locationIndex) {
+    public RestaurantSearchService(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
-        this.locationIndex = locationIndex;
     }
 
     public RestaurantSearchResponse search(RestaurantSearchCriteria input) {
@@ -52,13 +50,10 @@ public class RestaurantSearchService {
         List<RestaurantSearchResponse.RestaurantSummary> content = mongoTemplate.find(query, Restaurant.class).stream()
                 .map(restaurant -> toSummary(restaurant, null)).toList();
         return new RestaurantSearchResponse(content, input.page(), input.size(), total,
-                (total + input.size() - 1) / input.size());
+                totalPages(total, input.size()));
     }
 
     private RestaurantSearchResponse searchNearby(RestaurantSearchCriteria input, Criteria filters) {
-        // Also handles a collection recreated after application startup.
-        locationIndex.ensure();
-
         Document point = new Document("type", "Point")
                 .append("coordinates", List.of(input.longitude(), input.latitude()));
         Document options = new Document("near", point).append("distanceField", "distanceMeters")
@@ -79,7 +74,7 @@ public class RestaurantSearchService {
         String sortField = input.sortBy().equals("distance") ? "distanceMeters" : SORT_FIELDS.get(input.sortBy());
         List<AggregationOperation> pageStages = new ArrayList<>(common);
         pageStages.add(raw(new Document("$sort", new Document(sortField, direction).append("_id", 1))));
-        pageStages.add(raw(new Document("$skip", input.page() * input.size())));
+        pageStages.add(raw(new Document("$skip", (long) input.page() * input.size())));
         pageStages.add(raw(new Document("$limit", input.size())));
         List<RestaurantSearchResponse.RestaurantSummary> content = mongoTemplate.aggregate(
                         Aggregation.newAggregation(pageStages), Restaurant.class, Document.class).getMappedResults().stream()
@@ -87,7 +82,11 @@ public class RestaurantSearchService {
                         ((Number) document.get("distanceMeters")).doubleValue() / 1000))
                 .toList();
         return new RestaurantSearchResponse(content, input.page(), input.size(), total,
-                (total + input.size() - 1) / input.size());
+                totalPages(total, input.size()));
+    }
+
+    private long totalPages(long total, int size) {
+        return total == 0 ? 0 : 1 + (total - 1) / size;
     }
 
     private AggregationOperation raw(Document stage) {

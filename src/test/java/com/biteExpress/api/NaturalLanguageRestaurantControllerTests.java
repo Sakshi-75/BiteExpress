@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -27,6 +28,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class NaturalLanguageRestaurantControllerTests {
     @Autowired MockMvc mvc;
     @MockitoBean RestaurantSearchService searchService;
+
+    @Test
+    void omittedQueryUsesOnlyStructuredFilters() throws Exception {
+        when(searchService.search(any())).thenReturn(new RestaurantSearchResponse(List.of(), 1, 5, 0, 0));
+        mvc.perform(get("/v1/restaurants/search").param("city", "Gurgaon")
+                        .param("cuisine", "Indian").param("page", "1").param("size", "5"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.page").value(1));
+        ArgumentCaptor<RestaurantSearchCriteria> captured = ArgumentCaptor.forClass(RestaurantSearchCriteria.class);
+        verify(searchService).search(captured.capture());
+        assertNull(captured.getValue().name());
+        assertEquals("Gurgaon", captured.getValue().city());
+        assertEquals("Indian", captured.getValue().cuisine());
+        assertEquals(1, captured.getValue().page());
+        assertEquals(5, captured.getValue().size());
+    }
 
     @Test
     void explicitParametersOverrideEveryInferredFieldAndKeepPagination() throws Exception {
@@ -88,8 +104,8 @@ class NaturalLanguageRestaurantControllerTests {
     }
 
     @Test
-    void rejectsMissingUnsupportedAndInvalidQueries() throws Exception {
-        mvc.perform(get("/v1/restaurants/search"))
+    void rejectsBlankUnsupportedAndInvalidQueries() throws Exception {
+        mvc.perform(get("/v1/restaurants/search").param("q", "   "))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("UNSUPPORTED_SEARCH"));
         mvc.perform(get("/v1/restaurants/search").param("q", "restaurants serving butter chicken dish"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("UNSUPPORTED_SEARCH"));

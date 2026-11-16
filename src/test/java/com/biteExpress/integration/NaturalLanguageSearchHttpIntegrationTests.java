@@ -25,7 +25,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = "spring.mongodb.database=biteexpress_integration_test")
+@SpringBootTest(properties = {"spring.mongodb.database=biteexpress_integration_test",
+        "biteexpress.search.create-location-index-on-startup=true"})
 @AutoConfigureMockMvc
 @Import(MongoIntegrationTestConfiguration.class)
 class NaturalLanguageSearchHttpIntegrationTests {
@@ -43,12 +44,30 @@ class NaturalLanguageSearchHttpIntegrationTests {
     @BeforeEach
     void seedOnlyTheContainer() {
         MongoIntegrationTestConfiguration.assertContainerConnection(template, client, container);
+        org.junit.jupiter.api.Assertions.assertTrue(template.getCollection("restaurants")
+                .listIndexes().into(new java.util.ArrayList<>()).stream()
+                .anyMatch(index -> "2dsphere".equals(index.get("key", org.bson.Document.class).getString("location"))),
+                "The location index must exist before nearby requests");
         repository.deleteAll();
         repository.saveAll(List.of(
                 restaurant(A, "Spice House", "Gurgaon", "Indian", 4.6, 500, "INR", 77.0266),
                 restaurant(B, "Dragon Wok", "Gurugram", "Chinese", 4.2, 800, "INR", 77.0366),
                 restaurant(C, "Delhi Kitchen", "New Delhi", "North Indian", 4.9, 700, "Indian Rupees(Rs.)", 77.2167),
                 restaurant(D, "Olive Table", "Gurgaon", "Italian", null, 600, "USD", null)));
+    }
+
+    @Test
+    void omittedQueryUsesStructuredAndNearbyMongoSearch() throws Exception {
+        mvc.perform(get("/v1/restaurants/search").param("city", "Gurgaon")
+                        .param("cuisine", "Italian"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].id").value(D));
+        mvc.perform(get("/v1/restaurants/search").param("latitude", "28.4595")
+                        .param("longitude", "77.0266").param("radiusKm", "2")
+                        .param("size", "1").param("page", "1"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.content[0].id").value(B));
     }
 
     @Test

@@ -141,7 +141,7 @@ class RestaurantSearchHttpIntegrationTests {
     }
 
     @Test
-    void nearbySearchOrdersByDistanceAndCreates2dsphereIndex() throws Exception {
+    void nearbySearchOrdersByDistanceUsingStartup2dsphereIndex() throws Exception {
         move(B, 77.0366);
         move(D, 77.0466);
         mvc.perform(get("/v1/restaurants").param("latitude", "28.4595").param("longitude", "77.0266"))
