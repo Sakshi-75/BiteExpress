@@ -20,19 +20,19 @@ For an IDE run, start MongoDB with docker compose up -d mongo, stop the Compose 
 
 ## Import data
 
-Import is disabled by default. The included [sample CSV](data/sample-restaurants.csv) has three illustrative rows. The country-code CSV is exported from the supplied Excel mapping; its code and resolved name are embedded in each restaurant. To import the sample:
+Import is disabled by default. The bundled [sample CSV](data/sample-restaurants.csv) contains three synthetic restaurants for a reproducible demo. The bundled [country-code lookup](data/country-codes.csv) contains the 15 code/name pairs used by the importer; it covers every country code in the local Zomato CSV. To import the sample:
 
 ~~~sh
 docker compose run --rm -e SPRING_MAIN_WEB_APPLICATION_TYPE=none -e BITEEXPRESS_IMPORT_ENABLED=true app
 ~~~
 
-For the full dataset, download the Zomato restaurant CSV from [Kaggle](https://www.kaggle.com/datasets/shrutimehta/zomato-restaurants-data), place it at data/zomato.csv, then run:
+The full dataset is **not bundled**. Download the [Zomato Restaurants Data dataset on Kaggle](https://www.kaggle.com/datasets/shrutimehta/zomato-restaurants-data), extract `zomato.csv`, and place it at `data/zomato.csv` beside the included country-code lookup. Then run:
 
 ~~~sh
 docker compose run --rm -e SPRING_MAIN_WEB_APPLICATION_TYPE=none -e BITEEXPRESS_IMPORT_ENABLED=true -e BITEEXPRESS_IMPORT_FILE=file:./data/zomato.csv app
 ~~~
 
-The full CSV is Git ignored because its redistribution rights have not been verified. BITEEXPRESS_IMPORT_COUNTRY_FILE overrides the country-code file. For an IDE import, also set SPRING_MAIN_WEB_APPLICATION_TYPE=none and the local MongoDB URI above.
+The Kaggle listing does not establish that the original Zomato data may be republished in this repository, so `data/zomato.csv` remains Git ignored. The small country-code lookup contains factual code/name pairs transcribed from the source mapping; the source Excel file is not bundled. `BITEEXPRESS_IMPORT_COUNTRY_FILE` overrides the lookup path if your copy uses different codes. For an IDE import, also set `SPRING_MAIN_WEB_APPLICATION_TYPE=none` and the local MongoDB URI above.
 
 The importer streams rows in batches of 250. Stable UUIDs derived from source IDs make repeat imports idempotent; the last valid duplicate row wins. Missing names/IDs, unknown country codes, or malformed required values reject a row. Missing/unrated ratings stay null; invalid or (0, 0) coordinates become null without rejecting an otherwise valid row. Strings and cuisines are trimmed. Source currencies are preserved, including known country/currency anomalies.
 
@@ -69,6 +69,10 @@ docker compose exec mongo mongosh biteexpress --quiet --eval "print(db.restauran
 ~~~
 
 On Windows, use .\mvnw.cmd. Start Docker Desktop for verify. Integration tests use an isolated Testcontainers MongoDB and verify its endpoint before clearing test fixtures; ordinary test contexts use an unreachable MongoDB URI. The combined JaCoCo report is at target/site/jacoco/index.html. For a manual repeat-import check that cleans up its own test database, run .\scripts\verify-sample-import.ps1 after building the app image. It refuses an existing test database and reports cleanup failures.
+
+## Performance testing
+
+Read-only k6 workloads and MongoDB explain results are in [docs/performance.md](docs/performance.md).
 
 docker compose down stops services and preserves the MongoDB volume. Only use docker compose down --volumes when you intentionally want to remove all Compose MongoDB data.
 

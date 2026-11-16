@@ -34,4 +34,6 @@ build/
 
 ### Local agent guidance ###
 /.steering/
+# Full third-party dataset: redistribution rights have not been established.
 /data/zomato.csv
+/performance/results/
