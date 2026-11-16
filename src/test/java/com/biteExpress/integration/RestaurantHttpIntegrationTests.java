@@ -1,6 +1,7 @@
 package com.biteExpress.integration;
 
 import com.biteExpress.repository.RestaurantRepository;
+import com.mongodb.client.MongoClient;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.testcontainers.mongodb.MongoDBContainer;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -28,10 +30,12 @@ class RestaurantHttpIntegrationTests {
     @Autowired MockMvc mvc;
     @Autowired RestaurantRepository repository;
     @Autowired MongoTemplate mongoTemplate;
+    @Autowired MongoClient mongoClient;
+    @Autowired MongoDBContainer mongoContainer;
 
     @BeforeEach
     void cleanContainerDatabase() {
-        assertEquals("biteexpress_integration_test", mongoTemplate.getDb().getName());
+        MongoIntegrationTestConfiguration.assertContainerConnection(mongoTemplate, mongoClient, mongoContainer);
         repository.deleteAll();
     }
 

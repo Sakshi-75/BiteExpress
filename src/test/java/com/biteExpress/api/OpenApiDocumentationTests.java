@@ -13,7 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "spring.mongodb.uri=mongodb://127.0.0.1:1/biteexpress_test_guard?serverSelectionTimeoutMS=1000")
 class OpenApiDocumentationTests {
     @Value("${local.server.port}") int port;
 

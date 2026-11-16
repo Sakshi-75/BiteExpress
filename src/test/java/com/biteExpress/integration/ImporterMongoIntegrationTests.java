@@ -3,6 +3,7 @@ package com.biteExpress.integration;
 import com.biteExpress.importer.SampleRestaurantImport;
 import com.biteExpress.model.Restaurant;
 import com.biteExpress.repository.RestaurantRepository;
+import com.mongodb.client.MongoClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -12,6 +13,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.testcontainers.mongodb.MongoDBContainer;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,11 +27,13 @@ import static org.junit.jupiter.api.Assertions.*;
 class ImporterMongoIntegrationTests {
     @TempDir Path tempDir;
     @Autowired MongoTemplate template;
+    @Autowired MongoClient mongoClient;
+    @Autowired MongoDBContainer mongoContainer;
     @Autowired RestaurantRepository repository;
 
     @BeforeEach
     void cleanContainerDatabase() {
-        assertEquals("biteexpress_integration_test", template.getDb().getName());
+        MongoIntegrationTestConfiguration.assertContainerConnection(template, mongoClient, mongoContainer);
         repository.deleteAll();
     }
 

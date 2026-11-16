@@ -12,7 +12,8 @@ import org.mockito.Mockito;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "spring.mongodb.uri=mongodb://127.0.0.1:1/biteexpress_test_guard?serverSelectionTimeoutMS=1000")
 class BiteExpressApplicationTests {
 	@Value("${local.server.port}")
 	private int port;

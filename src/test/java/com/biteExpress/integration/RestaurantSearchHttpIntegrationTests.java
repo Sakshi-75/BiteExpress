@@ -6,6 +6,7 @@ import com.biteExpress.model.Pricing;
 import com.biteExpress.model.Rating;
 import com.biteExpress.model.Restaurant;
 import com.biteExpress.repository.RestaurantRepository;
+import com.mongodb.client.MongoClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.mongodb.MongoDBContainer;
 
 import java.util.List;
 
@@ -38,10 +40,12 @@ class RestaurantSearchHttpIntegrationTests {
     @Autowired MockMvc mvc;
     @Autowired RestaurantRepository repository;
     @Autowired MongoTemplate mongoTemplate;
+    @Autowired MongoClient mongoClient;
+    @Autowired MongoDBContainer mongoContainer;
 
     @BeforeEach
     void seedOnlyTheContainerDatabase() {
-        assertEquals("biteexpress_integration_test", mongoTemplate.getDb().getName());
+        MongoIntegrationTestConfiguration.assertContainerConnection(mongoTemplate, mongoClient, mongoContainer);
         repository.deleteAll();
         repository.saveAll(List.of(
                 restaurant(A, "Spice House", "Gurgaon", "Indian", 4.6, 500, "INR"),

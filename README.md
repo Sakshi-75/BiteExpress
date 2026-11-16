@@ -140,11 +140,24 @@ Run tests with the Maven wrapper (or `mvn` with JDK 21). Unit and MVC slice test
 ./mvnw clean verify
 ```
 
-On Windows PowerShell, use `.\mvnw.cmd test` or `.\mvnw.cmd clean verify`. Start Docker Desktop before `verify`; the integration tests are grouped in `src/test/java/com/biteExpress/integration` and use Testcontainers to start a disposable MongoDB 8 instance with Spring Boot `@ServiceConnection`. They use the `biteexpress_integration_test` database, clear its `restaurants` collection before each test, and never connect to the Compose development database. No MongoDB URI environment variables are required. The tests cover API creation/retrieval, validation, structured listing, and repeat CSV import. `docker compose build app` runs the unit tests during the Dockerfile's `package` step; the integration tests run separately in `verify` because Docker is not available inside the image build.
+On Windows PowerShell, use `.\mvnw.cmd test` or `.\mvnw.cmd clean verify`. Start Docker Desktop before `verify`; the integration tests are grouped in `src/test/java/com/biteExpress/integration` and use Testcontainers to start a disposable MongoDB 8 instance with Spring Boot `@ServiceConnection`. They use one `biteexpress_integration_test` database and verify the connection points to the running test container before clearing its `restaurants` collection. Tests without a container have an unreachable MongoDB URI by default, so they cannot fall back to the development server. The test container is removed when the test process ends, including after a failed test. No MongoDB URI environment variables are required. The tests cover API creation/retrieval, validation, structured listing, and repeat CSV import. `docker compose build app` runs the unit tests during the Dockerfile's `package` step; the integration tests run separately in `verify` because Docker is not available inside the image build.
 
 `clean verify` generates a combined JaCoCo report for unit and integration tests at `target/site/jacoco/index.html`. Run both phases before interpreting coverage; `test` alone does not include the MongoDB-backed tests.
 
-For manual repeat-import checks, use a separate isolated database; never delete development data to test idempotency.
+For a manual repeat-import check on Windows, build the app image and run the verification script:
+
+```powershell
+docker compose build app
+.\scripts\verify-sample-import.ps1
+```
+
+The script refuses to run if `biteexpress_manual_test` already exists. Otherwise it imports the sample twice, checks that the count stays the same, and removes that database in `finally`, including after an import or assertion failure. It never targets `biteexpress`. If the cleanup command itself fails, the script reports that explicitly; after checking that the database belongs to this run, retry only its guarded cleanup command:
+
+```sh
+docker compose exec mongo mongosh biteexpress_manual_test --quiet --eval "if (db.getName() !== 'biteexpress_manual_test') throw new Error('wrong database'); printjson(db.dropDatabase())"
+```
+
+Existing databases from earlier manual runs are not removed by tests or this script.
 
 ## Stop services
 
