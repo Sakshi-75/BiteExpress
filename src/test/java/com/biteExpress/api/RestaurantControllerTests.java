@@ -16,6 +16,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -34,7 +35,9 @@ class RestaurantControllerTests {
         when(service.get("missing")).thenThrow(new RestaurantNotFoundException("missing"));
         mvc.perform(get("/v1/restaurants/missing"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("RESTAURANT_NOT_FOUND"));
+                .andExpect(jsonPath("$.code").value("RESTAURANT_NOT_FOUND"))
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.title").value("Not Found"));
     }
 
     @Test
@@ -91,7 +94,8 @@ class RestaurantControllerTests {
     void malformedJsonHasInvalidRequestCode() throws Exception {
         mvc.perform(post("/v1/restaurants").contentType(MediaType.APPLICATION_JSON).content("{\"name\":"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.status").value(400));
         verifyNoInteractions(service);
     }
 
@@ -115,14 +119,25 @@ class RestaurantControllerTests {
         for (String query : invalid) {
             mvc.perform(get("/v1/restaurants?" + query))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                    .andExpect(jsonPath("$.code").value("INVALID_FILTER"));
         }
         for (String field : List.of("name", "currency")) {
             mvc.perform(get("/v1/restaurants").param(field, "  "))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                    .andExpect(jsonPath("$.code").value("INVALID_FILTER"));
         }
         verifyNoInteractions(searchService);
+    }
+
+    @Test
+    void acceptsInclusiveSearchBoundaries() throws Exception {
+        when(searchService.search(any())).thenReturn(new RestaurantSearchResponse(List.of(), 0, 100, 0, 0));
+        mvc.perform(get("/v1/restaurants").param("minRating", "5")
+                        .param("maxCostForTwo", "0").param("currency", "INR")
+                        .param("latitude", "-90").param("longitude", "180")
+                        .param("radiusKm", "0").param("size", "100"))
+                .andExpect(status().isOk());
+        verify(searchService).search(any());
     }
 
     private String validJson() {

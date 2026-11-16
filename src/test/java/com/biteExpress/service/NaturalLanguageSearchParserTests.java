@@ -48,7 +48,7 @@ class NaturalLanguageSearchParserTests {
         for (String query : new String[]{"", "restaurants", "best nearest restaurants",
                 "restaurants in Gurgaon or Delhi", "restaurants with butter chicken dish",
                 "romantic restaurants", "restaurants under 500 dollars", "restaurants near Gurgaon"}) {
-            assertThrows(InvalidRestaurantSearchException.class, () -> parser.parse(query), query);
+            assertThrows(UnsupportedRestaurantSearchException.class, () -> parser.parse(query), query);
         }
     }
 }

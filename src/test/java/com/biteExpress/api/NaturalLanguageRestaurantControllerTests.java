@@ -57,7 +57,7 @@ class NaturalLanguageRestaurantControllerTests {
     void nearestRequiresCoordinatesEvenWhenSortIsOverridden() throws Exception {
         for (String query : new String[]{"nearest restaurants", "nearest Chinese restaurants within 5 km"}) {
             mvc.perform(get("/v1/restaurants/search").param("q", query).param("sortBy", "rating"))
-                    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("UNSUPPORTED_SEARCH"));
         }
         verifyNoInteractions(searchService);
     }
@@ -76,14 +76,28 @@ class NaturalLanguageRestaurantControllerTests {
     }
 
     @Test
+    void explicitCurrencyMakesAnOtherwiseAmbiguousBudgetUsable() throws Exception {
+        when(searchService.search(any())).thenReturn(new RestaurantSearchResponse(List.of(), 0, 20, 0, 0));
+        mvc.perform(get("/v1/restaurants/search").param("q", "restaurants under 500")
+                        .param("currency", "INR"))
+                .andExpect(status().isOk());
+        ArgumentCaptor<RestaurantSearchCriteria> captured = ArgumentCaptor.forClass(RestaurantSearchCriteria.class);
+        verify(searchService).search(captured.capture());
+        assertEquals(500, captured.getValue().maxCostForTwo());
+        assertEquals("INR", captured.getValue().currency());
+    }
+
+    @Test
     void rejectsMissingUnsupportedAndInvalidQueries() throws Exception {
         mvc.perform(get("/v1/restaurants/search"))
-                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("UNSUPPORTED_SEARCH"));
         mvc.perform(get("/v1/restaurants/search").param("q", "restaurants serving butter chicken dish"))
-                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("UNSUPPORTED_SEARCH"));
+        mvc.perform(get("/v1/restaurants/search").param("q", "restaurants under 500"))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("UNSUPPORTED_SEARCH"));
         mvc.perform(get("/v1/restaurants/search").param("q", "nearest restaurants")
                         .param("latitude", "91").param("longitude", "77"))
-                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_FILTER"));
         verifyNoInteractions(searchService);
     }
 }

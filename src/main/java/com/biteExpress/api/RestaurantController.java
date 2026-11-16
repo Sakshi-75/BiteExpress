@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/v1/restaurants")
-@Tag(name = "Restaurants", description = "Create restaurants and retrieve them by ID")
+@Tag(name = "Restaurants", description = "Create, retrieve, and search restaurants")
 public class RestaurantController {
     private final RestaurantService service;
     private final RestaurantSearchService searchService;
@@ -39,7 +39,8 @@ public class RestaurantController {
     @Operation(summary = "Search restaurants", description = "Combines supplied filters with AND logic. Supply latitude and longitude to search located restaurants by distance; radiusKm limits results. Nearby results default to nearest first. Results use ID as a stable tiebreaker. Missing ratings or costs do not match their respective numeric filters.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Page of matching restaurants", content = @Content(schema = @Schema(implementation = RestaurantSearchResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid search parameter", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+            @ApiResponse(responseCode = "400", description = "Invalid filter (INVALID_FILTER)", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class),
+                    examples = @ExampleObject(value = "{\"status\":400,\"title\":\"Bad Request\",\"detail\":\"size must be between 1 and 100\",\"code\":\"INVALID_FILTER\"}")))
     })
     public RestaurantSearchResponse search(
             @Parameter(description = "Case-insensitive partial restaurant name; literal text", example = "spice") @RequestParam(required = false) String name,
@@ -75,7 +76,8 @@ public class RestaurantController {
                             """)))
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Restaurant created", content = @Content(schema = @Schema(implementation = RestaurantResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Validation failed or request JSON is invalid", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+            @ApiResponse(responseCode = "400", description = "Validation failed (VALIDATION_FAILED) or invalid JSON (INVALID_REQUEST)", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class),
+                    examples = @ExampleObject(value = "{\"status\":400,\"title\":\"Validation failed\",\"detail\":\"Restaurant request validation failed\",\"code\":\"VALIDATION_FAILED\",\"errors\":[\"name: must not be blank\"]}")))
     })
     public RestaurantResponse create(@Valid @RequestBody CreateRestaurantRequest request) {
         return service.create(request);
@@ -85,7 +87,8 @@ public class RestaurantController {
     @Operation(summary = "Get a restaurant by ID", description = "Returns the complete stored restaurant, whether created through the API or imported from CSV.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Restaurant found", content = @Content(schema = @Schema(implementation = RestaurantResponse.class))),
-            @ApiResponse(responseCode = "404", description = "No restaurant has this ID", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+            @ApiResponse(responseCode = "404", description = "No restaurant has this ID (RESTAURANT_NOT_FOUND)", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class),
+                    examples = @ExampleObject(value = "{\"status\":404,\"title\":\"Not Found\",\"detail\":\"Restaurant not found: missing\",\"code\":\"RESTAURANT_NOT_FOUND\"}")))
     })
     public RestaurantResponse get(@Parameter(description = "Stored restaurant ID (UUID for current records)", example = "c4a8b35e-8594-44d3-919f-dd48cdb191bc") @PathVariable String id) {
         return service.get(id);

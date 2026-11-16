@@ -28,16 +28,16 @@ public class NaturalLanguageSearchParser {
 
     public Intent parse(String query) {
         if (query == null || query.isBlank() || query.length() > 250)
-            throw new InvalidRestaurantSearchException("q must contain a supported request of at most 250 characters");
+            throw new UnsupportedRestaurantSearchException("q must contain a supported request of at most 250 characters");
         String remaining = query.toLowerCase(Locale.ROOT).replace("₹", "rs")
                 .replaceAll("[?!.:,;\\-]", " ").replaceAll("\\s+", " ").strip();
         if (DISH.matcher(remaining).find())
-            throw new InvalidRestaurantSearchException("Dish and menu-item search is unavailable; search by cuisine");
+            throw new UnsupportedRestaurantSearchException("Dish and menu-item search is unavailable; search by cuisine");
 
         boolean best = RANKING.matcher(remaining).find();
         boolean nearest = PROXIMITY.matcher(remaining).find();
         if (best && nearest)
-            throw new InvalidRestaurantSearchException("Best-rated and nearest are ambiguous together");
+            throw new UnsupportedRestaurantSearchException("Best-rated and nearest are ambiguous together");
         remaining = RANKING.matcher(remaining).replaceAll(" ");
         remaining = PROXIMITY.matcher(remaining).replaceAll(" ");
 
@@ -62,7 +62,7 @@ public class NaturalLanguageSearchParser {
         if (in.find()) {
             int start = in.start();
             int end = in.end();
-            if (in.find()) throw new InvalidRestaurantSearchException("Only one city can be inferred");
+            if (in.find()) throw new UnsupportedRestaurantSearchException("Only one city can be inferred");
             String after = remaining.substring(end).strip();
             Matcher afterCuisine = Pattern.compile("\\b(?:serving|with)\\b").matcher(after);
             if (afterCuisine.find()) {
@@ -73,7 +73,7 @@ public class NaturalLanguageSearchParser {
                 remaining = remaining.substring(0, start);
             }
             if (!city.matches("[a-z][a-z '\\-]{0,79}") || city.matches(".*\\b(?:and|or)\\b.*"))
-                throw new InvalidRestaurantSearchException("City request is ambiguous or unsupported");
+                throw new UnsupportedRestaurantSearchException("City request is ambiguous or unsupported");
             city = titleCase(city);
         }
 
@@ -87,11 +87,11 @@ public class NaturalLanguageSearchParser {
                 candidate = candidate.substring(0, candidate.length() - " food".length());
             String matchedCuisine = candidate;
             cuisine = CUISINES.stream().filter(value -> value.equalsIgnoreCase(matchedCuisine)).findFirst()
-                    .orElseThrow(() -> new InvalidRestaurantSearchException(
+                    .orElseThrow(() -> new UnsupportedRestaurantSearchException(
                             "Unsupported cuisine or dish request; use a supported cuisine label"));
         }
         if (city == null && cuisine == null && maxCost == null && radiusKm == null && !best && !nearest)
-            throw new InvalidRestaurantSearchException("No supported city, cuisine, rating, distance, or cost intent found");
+            throw new UnsupportedRestaurantSearchException("No supported city, cuisine, rating, distance, or cost intent found");
         return new Intent(city, cuisine, best ? 0.0 : null, maxCost, currency, radiusKm,
                 best ? "rating" : nearest ? "distance" : null,
                 best ? "desc" : nearest ? "asc" : null,

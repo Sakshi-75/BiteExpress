@@ -1,6 +1,6 @@
 package com.biteExpress.api;
 
-import com.biteExpress.service.InvalidRestaurantSearchException;
+import com.biteExpress.service.UnsupportedRestaurantSearchException;
 import com.biteExpress.service.NaturalLanguageSearchParser;
 import com.biteExpress.service.RestaurantSearchCriteria;
 import com.biteExpress.service.RestaurantSearchService;
@@ -33,7 +33,8 @@ public class NaturalLanguageRestaurantController {
             description = "Parses supported city, cuisine, best-rated, nearest, and rupee-budget phrases into the same MongoDB search used by GET /v1/restaurants. Explicit parameters override inferred values. Dish-level and ambiguous requests return 400.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Page of matching restaurants", content = @Content(schema = @Schema(implementation = RestaurantSearchResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Unsupported query or invalid parameter", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class)))
+            @ApiResponse(responseCode = "400", description = "Unsupported natural-language request (UNSUPPORTED_SEARCH) or invalid explicit filter (INVALID_FILTER)", content = @Content(mediaType = "application/problem+json", schema = @Schema(implementation = ProblemDetail.class),
+                    examples = @ExampleObject(value = "{\"status\":400,\"title\":\"Bad Request\",\"detail\":\"Dish and menu-item search is unavailable; search by cuisine\",\"code\":\"UNSUPPORTED_SEARCH\"}")))
     })
     public RestaurantSearchResponse search(
             @Parameter(description = "Supported natural-language query. Examples: best North Indian restaurants in Gurugram under Rs 800 for two; nearest Chinese restaurants within 5 km",
@@ -56,7 +57,9 @@ public class NaturalLanguageRestaurantController {
     ) {
         var intent = parser.parse(q);
         if (intent.requiresCoordinates() && (latitude == null || longitude == null))
-            throw new InvalidRestaurantSearchException("Nearest or radius search requires latitude and longitude");
+            throw new UnsupportedRestaurantSearchException("Nearest or radius search requires latitude and longitude");
+        if (intent.maxCostForTwo() != null && intent.currency() == null && currency == null)
+            throw new UnsupportedRestaurantSearchException("A budget request requires an explicit currency such as INR");
         return searchService.search(new RestaurantSearchCriteria(name,
                 city != null ? city : intent.city(), cuisine != null ? cuisine : intent.cuisine(),
                 minRating != null ? minRating : intent.minRating(),

@@ -2,6 +2,7 @@ package com.biteExpress.api;
 
 import com.biteExpress.service.RestaurantNotFoundException;
 import com.biteExpress.service.InvalidRestaurantSearchException;
+import com.biteExpress.service.UnsupportedRestaurantSearchException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -39,12 +40,17 @@ public class RestaurantExceptionHandler {
 
     @ExceptionHandler(InvalidRestaurantSearchException.class)
     ResponseEntity<ProblemDetail> invalidSearch(InvalidRestaurantSearchException error) {
-        return problem(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", error.getMessage());
+        return problem(HttpStatus.BAD_REQUEST, "INVALID_FILTER", error.getMessage());
+    }
+
+    @ExceptionHandler(UnsupportedRestaurantSearchException.class)
+    ResponseEntity<ProblemDetail> unsupportedSearch(UnsupportedRestaurantSearchException error) {
+        return problem(HttpStatus.BAD_REQUEST, "UNSUPPORTED_SEARCH", error.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     ResponseEntity<ProblemDetail> invalidParameter(MethodArgumentTypeMismatchException error) {
-        return problem(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid query parameter: " + error.getName());
+        return problem(HttpStatus.BAD_REQUEST, "INVALID_FILTER", "Invalid query parameter: " + error.getName());
     }
 
     private ResponseEntity<ProblemDetail> problem(HttpStatus status, String code, String detail) {

@@ -2,6 +2,11 @@ spring:
   application:
     name: biteExpress
 
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+
 biteexpress:
   search:
     create-location-index-on-startup: true

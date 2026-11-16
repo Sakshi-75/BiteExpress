@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 @OpenAPIDefinition(info = @Info(title = "BiteExpress Restaurant Discovery API", version = "v1",
-        description = "Create restaurants and retrieve complete restaurant details by ID."))
+        description = "Create restaurants and search by structured filters, distance, or supported natural-language phrases."))
 public class BiteExpressApplication {
 
 	public static void main(String[] args) {

@@ -49,6 +49,20 @@ class OpenApiDocumentationTests {
                     "$.paths['/v1/restaurants/search'].get.parameters[*].name");
             assertTrue(naturalParameters.containsAll(java.util.List.of("q", "city", "cuisine",
                     "latitude", "longitude", "radiusKm", "page", "size", "sortBy", "sortDir")));
+            java.util.List<String> structuredParameters = JsonPath.read(json,
+                    "$.paths['/v1/restaurants'].get.parameters[*].name");
+            assertTrue(structuredParameters.containsAll(java.util.List.of("name", "city", "cuisine",
+                    "minRating", "maxCostForTwo", "currency", "latitude", "longitude", "radiusKm",
+                    "page", "size", "sortBy", "sortDir")));
+            assertTrue(json.contains("INVALID_FILTER"));
+            assertTrue(json.contains("UNSUPPORTED_SEARCH"));
+            assertTrue(json.contains("VALIDATION_FAILED"));
+            assertTrue(json.contains("RESTAURANT_NOT_FOUND"));
+            assertTrue(json.contains("Dish and menu-item search is unavailable"));
+            assertEquals("Restaurant created", JsonPath.read(json,
+                    "$.paths['/v1/restaurants'].post.responses['201'].description"));
+            assertEquals("No restaurant has this ID (RESTAURANT_NOT_FOUND)", JsonPath.read(json,
+                    "$.paths['/v1/restaurants/{id}'].get.responses['404'].description"));
         }
     }
 

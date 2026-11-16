@@ -105,10 +105,10 @@ class NaturalLanguageSearchHttpIntegrationTests {
         for (String query : new String[]{"best nearest restaurants", "restaurants with butter chicken dish",
                 "restaurants in Gurgaon or Delhi", "romantic restaurants"}) {
             mvc.perform(get("/v1/restaurants/search").param("q", query))
-                    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("UNSUPPORTED_SEARCH"));
         }
         mvc.perform(get("/v1/restaurants/search").param("q", "nearest restaurants"))
-                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("UNSUPPORTED_SEARCH"));
         org.junit.jupiter.api.Assertions.assertEquals(4, repository.count());
     }
 
